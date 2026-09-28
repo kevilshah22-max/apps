@@ -1,9 +1,9 @@
-name: Deploy Snapboard Web
+name: Deploy Nexa Forge Public Suite
 on:
   push:
     branches: ["main"]
     paths:
-      - "apps/snapboard-web/**"
+      - "site/**"
       - ".github/workflows/snapboard-pages.yml"
   workflow_dispatch:
 permissions:
@@ -17,17 +17,17 @@ jobs:
   deploy:
     environment:
       name: github-pages
-      url: $\{{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
       - name: Configure Pages
         uses: actions/configure-pages@v5
-      - name: Upload site
+      - name: Upload public suite
         uses: actions/upload-pages-artifact@v4
         with:
-          path: apps/snapboard-web
+          path: site
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
