@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827">
+<meta name="description" content="Snapboard — capture ideas, insights, questions and reminders before they disappear.">
+<title>Snapboard — Capture before it disappears</title>
+<link rel="stylesheet" href="./styles.css"></head>
+<body>
+<header class="topbar"><div class="brand"><span class="logo">S</span><span>Snapboard</span></div><button id="exportBtn" class="ghost">Export</button></header>
+<main>
+<section class="hero"><div><p class="eyebrow">NEXA FORGE · PRIVATE-BY-DESIGN</p><h1>Capture it.<br><em>Keep moving.</em></h1><p class="lead">A fast, quiet place for ideas, insights, questions and reminders. Your notes stay in this browser.</p></div><div class="stat"><strong id="count">0</strong><span>snaps</span></div></section>
+<section class="capture card"><div class="section-title"><h2>New snap</h2><span>Saved locally</span></div>
+<input id="title" maxlength="120" placeholder="What do you want to remember?">
+<textarea id="body" maxlength="1000" rows="4" placeholder="Add a little context…"></textarea>
+<div class="controls"><div class="chips" id="kind"><button class="chip selected" data-value="Idea">Idea</button><button class="chip" data-value="Insight">Insight</button><button class="chip" data-value="Question">Question</button><button class="chip" data-value="Reminder">Reminder</button></div>
+<div class="chips" id="energy"><button class="chip selected" data-value="Medium">Medium</button><button class="chip" data-value="Low">Low</button><button class="chip" data-value="High">High</button></div></div>
+<div class="capture-row"><input id="tags" maxlength="160" placeholder="Tags, separated by commas (optional)"><button id="saveBtn" class="primary">Save snap</button></div></section>
+<section class="board"><div class="board-head"><div><h2>Your board</h2><p>Stored only on this device.</p></div><input id="search" class="search" placeholder="Search snaps…"></div>
+<div id="empty" class="empty">Nothing here yet. Capture the thought before it disappears.</div><div id="list" class="list"></div></section>
+</main><footer><span>SNAPBOARD v1.0</span><span>No account · No backend · Local storage</span></footer>
+<script src="./app.js"></script></body></html>
