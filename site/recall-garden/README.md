@@ -1,7 +1,21 @@
 # RecallGarden v0.1
 
-Local-first spaced-repetition flashcards. Cards stay in browser localStorage. No account, server, analytics or external API.
+RecallGarden is a lightweight, local-first flashcard app with a simple spaced-repetition review loop.
 
-Features: create/edit/delete cards, subject tags, due review, four recall ratings, keyboard shortcuts, JSON backup import/export, responsive layout.
+## MVP features
+- Create and delete question/answer cards
+- Optional subject tags, search and filtering
+- Review due cards or practise the full collection
+- Rate recall as Again, Hard, Good or Easy
+- Simple interval scheduling and progress counters
+- Export a JSON backup
+- Responsive interface and keyboard shortcuts (Space to flip; 1–4 to rate)
 
-Scheduling is a simplified educational heuristic, not a validated memory system. Export a backup before clearing browser data.
+## Privacy
+Cards stay in this browser's localStorage. There is no account, server, analytics or external API. Export a backup before clearing browser data or changing devices.
+
+## Scheduling note
+The interval scheduler is a simplified educational heuristic, not a validated memory system. Choose ratings that reflect your actual recall.
+
+## Run
+Open `index.html` in a modern browser or serve the containing directory with a static web server.
