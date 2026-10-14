@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
+import { createSnapPersistence, readSnapsSafely, UnreadableSnapDataError } from "./storage.mjs";
 
 const STORAGE_KEY = "nexa_snapboard_v2";
 const TAGS = ["work", "home", "build", "learn", "creative", "health", "money", "later"];
@@ -36,16 +37,42 @@ export default function App() {
   const [tags, setTags] = useState([]);
   const [query, setQuery] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [canResetUnreadableData, setCanResetUnreadableData] = useState(false);
+  const [storageError, setStorageError] = useState("");
+  const snapsRef = useRef([]);
 
-  useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then(raw => setSnaps(raw ? JSON.parse(raw) : []))
-      .finally(() => setLoaded(true));
+  const loadSnaps = useCallback(async () => {
+    setLoaded(false);
+    setLoadError("");
+    setCanResetUnreadableData(false);
+    try {
+      const saved = await readSnapsSafely(AsyncStorage, STORAGE_KEY);
+      snapsRef.current = saved;
+      setSnaps(saved);
+      setLoaded(true);
+    } catch (error) {
+      const unreadable = error instanceof UnreadableSnapDataError;
+      setCanResetUnreadableData(unreadable);
+      setLoadError(unreadable
+        ? "Snapboard found saved data it cannot safely read. It has not overwritten or deleted that data."
+        : "Snapboard could not read local storage. Your saved data has not been changed. Try again.");
+    }
   }, []);
 
-  useEffect(() => {
-    if (loaded) AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(snaps));
-  }, [snaps, loaded]);
+  useEffect(() => { loadSnaps(); }, [loadSnaps]);
+
+  const persistSnaps = useMemo(() => createSnapPersistence({
+    storage: AsyncStorage,
+    key: STORAGE_KEY,
+    getCurrent: () => snapsRef.current,
+    onCommitted: (next) => {
+      snapsRef.current = next;
+      setSnaps(next);
+      setStorageError("");
+    },
+    onError: () => setStorageError("The change was not saved. Your previous saved list is still displayed. Check device storage and try again.")
+  }), []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -66,23 +93,31 @@ export default function App() {
     current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]
   );
 
-  function saveSnap() {
+  async function saveSnap() {
     const cleanBody = body.trim();
     if (!cleanBody) {
       Alert.alert("Add a thought", "Write the thought before saving your snap.");
       return;
     }
-    setSnaps(current => [{
+    const newSnap = {
       id: uid(), title: title.trim() || "Untitled snap", body: cleanBody,
-      kind, energy, tags, created: Date.now()
-    }, ...current]);
-    setTitle(""); setBody(""); setTags([]); setKind("Idea"); setEnergy("Medium energy");
+      kind, energy, tags: [...tags], created: Date.now()
+    };
+    try {
+      await persistSnaps(current => [newSnap, ...current]);
+      setTitle(""); setBody(""); setTags([]); setKind("Idea"); setEnergy("Medium energy");
+    } catch {
+      // Keep the form intact so the user can retry after the visible storage warning.
+    }
   }
 
   function deleteSnap(id) {
     Alert.alert("Delete snap?", "This cannot be undone.", [
       { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => setSnaps(current => current.filter(s => s.id !== id)) }
+      { text: "Delete", style: "destructive", onPress: async () => {
+        try { await persistSnaps(current => current.filter(s => s.id !== id)); }
+        catch { /* Keep the card visible unless storage confirms the change. */ }
+      } }
     ]);
   }
 
@@ -91,15 +126,42 @@ export default function App() {
       ? snaps.map(s => "[" + new Date(s.created).toLocaleString() + "] " + s.title + "\n" +
           s.kind + " · " + s.energy + " · " + s.tags.map(t => "#" + t).join(" ") + "\n" + s.body + "\n").join("\n")
       : "No snaps yet.";
-    await Share.share({ message: text, title: "Snapboard export" });
+    try { await Share.share({ message: text, title: "Snapboard export" }); }
+    catch { Alert.alert("Export unavailable", "Snapboard could not open the device share sheet. Your saved snaps were not changed."); }
   }
 
   function clearAll() {
     if (!snaps.length) return;
     Alert.alert("Clear every snap?", "This will permanently remove all locally stored snaps.", [
       { text: "Cancel", style: "cancel" },
-      { text: "Clear all", style: "destructive", onPress: () => setSnaps([]) }
+      { text: "Clear all", style: "destructive", onPress: async () => {
+        try { await persistSnaps(() => []); }
+        catch { /* Keep the existing list visible if the storage write fails. */ }
+      } }
     ]);
+  }
+
+  function resetUnreadableData() {
+    Alert.alert(
+      "Discard unreadable saved data?",
+      "This permanently removes the unreadable Snapboard data stored on this device. Cancel if you may need to recover it.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Discard data", style: "destructive", onPress: async () => {
+          try {
+            await AsyncStorage.removeItem(STORAGE_KEY);
+            snapsRef.current = [];
+            setSnaps([]);
+            setLoadError("");
+            setCanResetUnreadableData(false);
+            setStorageError("");
+            setLoaded(true);
+          } catch {
+            setLoadError("Snapboard could not remove the unreadable data. Nothing else was changed; try again later.");
+          }
+        } }
+      ]
+    );
   }
 
   const renderSnap = ({ item }) => (
@@ -119,6 +181,21 @@ export default function App() {
       </View>}
     </View>
   );
+
+  if (!loaded) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <StatusBar style="dark" />
+        <View style={styles.loadScreen}>
+          <Text style={styles.brand}>Snapboard</Text>
+          <Text style={styles.sectionTitle}>{loadError ? "Saved data needs attention" : "Loading your snaps…"}</Text>
+          {!!loadError && <Text style={styles.errorText}>{loadError}</Text>}
+          {!!loadError && <Pressable style={styles.primaryButton} onPress={loadSnaps}><Text style={styles.primaryText}>Retry loading</Text></Pressable>}
+          {canResetUnreadableData && <Pressable style={styles.resetButton} onPress={resetUnreadableData}><Text style={styles.resetButtonText}>Discard unreadable data and start fresh</Text></Pressable>}
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -140,6 +217,8 @@ export default function App() {
                 <Pressable style={[styles.secondaryButton, styles.dangerButton]} onPress={clearAll}><Text style={[styles.buttonText, { color: palette.danger }]}>Clear</Text></Pressable>
               </View>
             </View>
+
+            {!!storageError && <Text accessibilityRole="alert" style={styles.errorBanner}>{storageError}</Text>}
 
             <View style={styles.panel}>
               <Text style={styles.sectionTitle}>New snap</Text>
@@ -190,6 +269,11 @@ export default function App() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
   content: { padding: 18, paddingBottom: 42 },
+  loadScreen: { flex: 1, justifyContent: "center", padding: 24 },
+  errorText: { color: palette.danger, fontSize: 14, lineHeight: 21, marginBottom: 14 },
+  errorBanner: { color: palette.danger, backgroundColor: "#FFF0F1", borderColor: "#F0D1D6", borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 12, fontSize: 12, lineHeight: 18 },
+  resetButton: { borderWidth: 1, borderColor: "#F0D1D6", backgroundColor: "#FFF", borderRadius: 13, padding: 13, alignItems: "center", marginTop: 10 },
+  resetButtonText: { color: palette.danger, fontSize: 13, fontWeight: "800", textAlign: "center" },
   top: { flexDirection: "row", gap: 12, alignItems: "flex-start", marginBottom: 18 },
   brand: { fontSize: 30, fontWeight: "800", letterSpacing: -0.8, color: palette.ink },
   tagline: { color: palette.muted, marginTop: 4, lineHeight: 19 },

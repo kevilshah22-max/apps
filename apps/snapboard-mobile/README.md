@@ -12,6 +12,12 @@ Nexa Forge's local-first idea capture app, ported from the web MVP to React Nati
 - No account, backend, analytics or paid API
 - Android and iOS package IDs: com.nexaforge.snapboard
 
+## Storage safety
+
+Snapboard validates saved data before opening the main screen. Unreadable data is never silently replaced with an empty list. Writes are serialised and a change is reflected in the UI only after AsyncStorage confirms it. Starting fresh after a data-format error requires an explicit destructive confirmation.
+
+Run the storage tests with `npm test` from this directory.
+
 ## Build
 
 Requires Node.js and the Expo CLI.
