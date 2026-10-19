@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f5f4ef">
+<meta name="description" content="Split a group bill fairly, item by item. Free, private and saved on your device.">
+<title>TabTally — Split the bill, fairly</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div class="shell">
+<header class="site-header">
+<a class="brand" href="./" aria-label="TabTally home"><span class="brand-mark">T</span><span><strong>TabTally</strong><small>GROUP BILL SPLITTER</small></span></a>
+<div class="header-right"><span class="privacy-dot"></span><span>Private by design</span><span id="app-status" role="status">Saved on this device</span></div>
+</header>
+<section class="hero">
+<div><p class="eyebrow">LESS MATH. FEWER AWKWARD MOMENTS.</p><h1>Split the bill.<br><em>Keep it fair.</em></h1><p class="hero-copy">Add what everyone ordered, choose who shared each item, and get a clear settlement — including tax and tip.</p></div>
+<div class="hero-stamp"><span>NO ACCOUNT</span><b>£</b><span>NO SERVER</span></div>
+</section>
+<section id="storage-notice" class="storage-notice" role="alert" hidden>
+<div><strong>Saved data needs attention</strong><p id="storage-message"></p></div>
+<div class="notice-actions"><button id="download-unreadable" class="button secondary" type="button">Download original data</button><button id="start-fresh" class="button danger-button" type="button">Start fresh</button></div>
+</section>
+<section id="storage-failure" class="storage-failure" hidden><span>Changes may not persist in this browser.</span><button id="retry-save" class="button secondary" type="button">Retry save</button></section>
+<main class="workspace">
+<div class="builder-column">
+<section class="panel">
+<div class="panel-heading"><div><span class="step">01</span><div><h2>Who's at the table?</h2><p>Add everyone sharing the bill.</p></div></div><span id="people-count" class="count-badge">1</span></div>
+<form id="person-form" class="inline-form"><label class="sr-only" for="person-name">Person's name</label><input id="person-name" name="person" maxlength="48" placeholder="Add a name…" autocomplete="off" required><button class="button primary" type="submit">Add person <span aria-hidden="true">+</span></button></form>
+<ul id="people-list" class="people-list" aria-label="People on this bill"></ul>
+</section>
+<section class="panel">
+<div class="panel-heading"><div><span class="step">02</span><div><h2>What was ordered?</h2><p>Assign each item to the people who shared it.</p></div></div><span id="items-count" class="count-badge">0</span></div>
+<form id="item-form" class="item-form">
+<div class="form-grid"><div class="field"><label for="item-name">Item name</label><input id="item-name" maxlength="80" placeholder="e.g. Margherita pizza" required></div><div class="field amount-field"><label for="item-amount">Amount</label><div class="amount-input"><span id="currency-symbol">£</span><input id="item-amount" type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" placeholder="0.00" required></div></div></div>
+<fieldset class="participants-field"><legend>Split this item between</legend><div id="participant-choices" class="participant-choices"></div></fieldset>
+<button class="button primary add-item-button" type="submit">Add item to bill <span aria-hidden="true">↗</span></button>
+</form>
+<div id="item-list" class="item-list" aria-live="polite"></div>
+<p id="empty-items" class="empty-state">Your bill is empty. Add the first item above to get started.</p>
+</section>
+<section class="panel extras-panel">
+<div class="panel-heading"><div><span class="step">03</span><div><h2>Make it add up</h2><p>Choose the currency and adjust extras.</p></div></div></div>
+<div class="extras-grid"><div class="field"><label for="currency">Currency</label><select id="currency"><option value="GBP">GBP · £ Pound sterling</option><option value="USD">USD · $ US dollar</option><option value="EUR">EUR · € Euro</option><option value="INR">INR · ₹ Indian rupee</option><option value="CAD">CAD · $ Canadian dollar</option><option value="AUD">AUD · $ Australian dollar</option></select></div><div class="field"><label for="tax-percent">Tax (%)</label><input id="tax-percent" type="number" min="0" max="100" step="0.1" value="0"></div><div class="field"><label for="tip-percent">Tip (%)</label><input id="tip-percent" type="number" min="0" max="100" step="0.5" value="10"></div></div>
+<p class="fine-print">Tax and tip are calculated from the item subtotal, then allocated proportionally to each person's base share. Rounding is handled to the penny.</p>
+</section>
+</div>
+<aside class="summary-column" aria-label="Bill summary">
+<section class="summary-card">
+<div class="summary-top"><span class="eyebrow">YOUR SETTLEMENT</span><span class="receipt-icon" aria-hidden="true">▤</span></div>
+<h2>Everyone's share</h2><p class="summary-intro">A clear breakdown, ready to settle.</p>
+<div class="totals"><div><span>Items subtotal</span><strong id="subtotal">£0.00</strong></div><div><span id="tax-label">Tax (0%)</span><strong id="tax-total">£0.00</strong></div><div><span id="tip-label">Tip (10%)</span><strong id="tip-total">£0.00</strong></div><div class="grand-total"><span>Total bill</span><strong id="grand-total">£0.00</strong></div></div>
+<div class="share-heading"><h3>Who owes what</h3><span>ITEMS + EXTRAS</span></div>
+<div id="share-list" class="share-list"></div>
+<div class="summary-actions"><button id="export-csv" class="button primary full-width" type="button">Export settlement CSV <span aria-hidden="true">↓</span></button><button id="export-json" class="button secondary full-width" type="button">Download backup (JSON)</button><button id="reset-bill" class="text-button" type="button">Start a new bill</button></div>
+</section>
+<p class="privacy-note"><span aria-hidden="true">◈</span> Your bill stays in this browser. TabTally doesn't send names or amounts to a server.</p>
+</aside>
+</main>
+<footer><span>TabTally · A small tool for smoother get-togethers.</span><span>Free · No sign-up · No tracking</span></footer>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<script type="module" src="./app.js"></script>
+</body>
+</html>
