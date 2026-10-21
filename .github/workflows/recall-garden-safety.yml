@@ -27,5 +27,5 @@ jobs:
         run: node --test site/recall-garden/tests/storage-safety.test.mjs
       - name: Check JavaScript module syntax
         run: |
-          node --check site/recall-garden/app.js
+          node --check site/recall-garden/app.mjs
           node --check site/recall-garden/storage-safety.mjs
