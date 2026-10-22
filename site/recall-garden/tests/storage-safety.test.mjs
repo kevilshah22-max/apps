@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseCardStorage, readReviewCount, canDiscardCorruptData } from "../storage-safety.mjs";
+import { parseCardStorage, readReviewCount, canStartCorruptReset, canDiscardCorruptData } from "../storage-safety.mjs";
 
 const validCard = {
   id: "card-1", question: "What is osmosis?", answer: "Net movement of water.",
@@ -40,6 +40,13 @@ test("review counters are safely normalised without affecting valid cards", () =
   assert.equal(readReviewCount("12.9"), 12);
   assert.equal(readReviewCount("-2"), 0);
   assert.equal(readReviewCount("not-a-number"), 0);
+});
+
+test("reset confirmation can be shown only for corrupt data after a recovery download", () => {
+  assert.equal(canStartCorruptReset("corrupt", false), false);
+  assert.equal(canStartCorruptReset("unavailable", true), false);
+  assert.equal(canStartCorruptReset("ready", true), false);
+  assert.equal(canStartCorruptReset("corrupt", true), true);
 });
 
 test("discard requires corrupt state, a recovery download and explicit confirmation", () => {
