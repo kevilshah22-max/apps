@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A local-only preflight checklist for reviewing risky AI-generated action plans before execution.">
+  <meta name="theme-color" content="#101522">
+  <title>AgentGuard — AI Action Preflight | Nexa Forge</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="../" aria-label="Nexa Forge public product suite">NEXA FORGE <span>/ TOOL 007</span></a>
+    <span class="privacy-pill"><span aria-hidden="true">●</span> LOCAL-ONLY · NO UPLOADS</span>
+  </header>
+  <main>
+    <section class="hero">
+      <p class="eyebrow">AI ACTION PREFLIGHT</p>
+      <h1>Pause before an agent acts.</h1>
+      <p class="lede">Review an AI-generated plan for risky side effects before you run it. AgentGuard is a transparent checklist—not an execution engine or a security guarantee.</p>
+    </section>
+
+    <section class="toolbar" aria-label="Plan actions">
+      <button id="scan" class="button primary" type="button">Run preflight</button>
+      <button id="sample" class="button" type="button">Load example</button>
+      <button id="copy" class="button" type="button">Copy review checklist</button>
+      <button id="export" class="button" type="button">Export report JSON</button>
+      <button id="clear" class="button subtle" type="button">Clear</button>
+    </section>
+
+    <p id="status" class="status" role="status" aria-live="polite">Paste a plan or load the example, then run preflight.</p>
+
+    <section class="workspace">
+      <article class="panel input-panel">
+        <div class="panel-heading"><div><p class="eyebrow">01 / INPUT</p><h2>Proposed agent plan</h2></div><span id="char-count" class="muted">0 / 50,000</span></div>
+        <label class="sr-only" for="plan">Paste the proposed AI action plan</label>
+        <textarea id="plan" maxlength="50000" spellcheck="false" placeholder="Example: Read customer records, email the report to an external address, then delete the source file…"></textarea>
+        <p class="helper">Text stays in this browser tab. Do not paste real passwords, API keys or confidential records into any tool unless you are authorised to do so.</p>
+      </article>
+
+      <article class="panel report-panel" aria-labelledby="report-title">
+        <div class="panel-heading"><div><p class="eyebrow">02 / RESULT</p><h2 id="report-title">Risk review</h2></div><span id="score" class="score-chip">— / 100</span></div>
+        <div id="report" class="report-empty"><div class="empty-mark" aria-hidden="true">✓</div><h3>No scan yet</h3><p>Run preflight to see which review checks matched the plan.</p></div>
+      </article>
+    </section>
+
+    <section class="panel safeguards">
+      <div class="panel-heading"><div><p class="eyebrow">WHAT IT CHECKS</p><h2>Risk signals, not verdicts</h2></div></div>
+      <div class="signal-grid">
+        <div><span>01</span><b>Prompt overrides</b><p>Requests to ignore instructions or bypass safeguards.</p></div>
+        <div><span>02</span><b>Secrets &amp; sensitive data</b><p>Credentials, personal records and protected information.</p></div>
+        <div><span>03</span><b>Destructive changes</b><p>Deletion, overwriting and hard-to-reverse operations.</p></div>
+        <div><span>04</span><b>External side effects</b><p>Messages, publication, purchases and permission changes.</p></div>
+      </div>
+    </section>
+
+    <aside class="disclaimer"><strong>Important:</strong> AgentGuard uses deterministic text patterns. It can miss risks, flag harmless wording, and cannot verify the real permissions or behaviour of an agent. A low score is not proof that a plan is safe. Review the exact action, destination, data scope and reversibility yourself.</aside>
+  </main>
+  <footer><a href="../">← Nexa Forge Public Suite</a><span>Built for review before execution · v0.1</span></footer>
+</body>
+</html>
