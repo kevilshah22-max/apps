@@ -30,6 +30,10 @@ export function readReviewCount(raw) {
   return Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0;
 }
 
+export function canStartCorruptReset(state, rawDownloaded) {
+  return state === "corrupt" && rawDownloaded === true;
+}
+
 export function canDiscardCorruptData(state, rawDownloaded, confirmed) {
   return state === "corrupt" && rawDownloaded === true && confirmed === true;
 }
