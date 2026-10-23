@@ -135,5 +135,23 @@ $("#export").addEventListener("click", () => {
   URL.revokeObjectURL(url);
   setStatus("Report exported. The original plan text is not included in the export.", "success");
 });
-plan.addEventListener("input", updateCharacterCount);
+function handlePlanInput() {
+  updateCharacterCount();
+  if (!latestReport) return;
+
+  latestReport = null;
+  scoreChip.textContent = "— / 100";
+  delete scoreChip.dataset.level;
+  report.replaceChildren();
+  const empty = make("div", "report-empty");
+  empty.append(
+    make("div", "empty-mark", "✓"),
+    make("h3", "", "No scan yet"),
+    make("p", "", "The plan changed. Run preflight again to review the updated text.")
+  );
+  report.append(empty);
+  setStatus("Plan changed. Previous results cleared; run preflight again before exporting.", "info");
+}
+
+plan.addEventListener("input", handlePlanInput);
 updateCharacterCount();
