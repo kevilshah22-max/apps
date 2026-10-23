@@ -1,4 +1,4 @@
-import { parseCardStorage, readReviewCount, canDiscardCorruptData } from "./storage-safety.mjs";
+import { parseCardStorage, readReviewCount, canStartCorruptReset, canDiscardCorruptData } from "./storage-safety.mjs";
 (()=>{"use strict";
 const $=s=>document.querySelector(s),K="nexa-recall-garden-v1",DAY=86400000,today=new Date().toISOString().slice(0,10);
 let cards=[],queue=[],flipped=false,done=0,edit=null,reviewedToday=0;
@@ -35,11 +35,20 @@ function lockApp(mode){
     recoveryPanel.innerHTML="<h2>Saved flashcards need recovery</h2><p>RecallGarden could not validate the saved data. It has not been replaced. Download the original saved text before choosing to start a fresh garden.</p><button id=\"downloadRawBtn\" class=\"button primary\" type=\"button\">Download original saved data</button> <button id=\"resetCorruptBtn\" class=\"button quiet\" type=\"button\" disabled>Start fresh after backup</button><p><small>The reset option unlocks only after the recovery download is initiated. Keep that file somewhere safe.</small></p>";
     recoveryPanel.querySelector("#downloadRawBtn").onclick=()=>{downloadText(rawSavedCards??"","recall-garden-unreadable-data.txt","text/plain");rawDownloaded=true;recoveryPanel.querySelector("#resetCorruptBtn").disabled=false;toast("Recovery copy downloaded. Review it before starting fresh.")};
     recoveryPanel.querySelector("#resetCorruptBtn").onclick=()=>{
-      if(!canDiscardCorruptData(storageState,rawDownloaded,false))return;
+      if(!canStartCorruptReset(storageState,rawDownloaded))return;
       const confirmed=window.confirm("Start a new empty garden? The unreadable saved data will be replaced. Continue only if you have kept the recovery file.");
       if(!canDiscardCorruptData(storageState,rawDownloaded,confirmed))return;
-      try{localStorage.setItem(K,"[]");cards=[];rawSavedCards=null;reviewedToday=readReviewCount(localStorage.getItem(K+"-reviewed-"+today));storageState="ready";unlockApp();render();toast("A fresh garden is ready. Keep your recovery copy separately.")}
-      catch(e){lockApp("unavailable");toast("Storage could not be reset; the original data has not been intentionally discarded.")}
+      let nextReviewedToday;
+      try{
+        nextReviewedToday=readReviewCount(localStorage.getItem(K+"-reviewed-"+today));
+        localStorage.setItem(K,"[]");
+      }catch(e){
+        lockApp("unavailable");
+        toast("Storage could not be reset. Keep your recovery copy and retry.");
+        return;
+      }
+      cards=[];rawSavedCards=null;reviewedToday=nextReviewedToday;storageState="ready";
+      unlockApp();render();toast("A fresh garden is ready. Keep your recovery copy separately.");
     };
   }else if(mode==="unavailable"){
     recoveryPanel.innerHTML="<h2>Browser storage is unavailable</h2><p>RecallGarden could not read browser storage. It cannot tell whether your saved cards are intact, so destructive reset is disabled. Restore browser storage access, then retry.</p><button id=\"retryStorageBtn\" class=\"button primary\" type=\"button\">Retry storage access</button>";
