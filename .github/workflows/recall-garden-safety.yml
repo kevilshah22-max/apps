@@ -1,0 +1,31 @@
+name: RecallGarden storage safety
+
+on:
+  push:
+    branches:
+      - fix/recall-garden-data-recovery-20261022
+    paths:
+      - "site/recall-garden/**"
+      - ".github/workflows/recall-garden-safety.yml"
+  pull_request:
+    paths:
+      - "site/recall-garden/**"
+      - ".github/workflows/recall-garden-safety.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  storage-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run storage safety regression tests
+        run: node --test site/recall-garden/tests/storage-safety.test.mjs
+      - name: Check JavaScript module syntax
+        run: |
+          node --check site/recall-garden/app.mjs
+          node --check site/recall-garden/storage-safety.mjs
