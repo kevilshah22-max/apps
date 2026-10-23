@@ -1,0 +1,33 @@
+name: AgentGuard regression tests
+
+on:
+  push:
+    branches: [main, feat/agentguard-public-mvp-20261023]
+    paths:
+      - "site/agentguard/**"
+      - ".github/workflows/agentguard-tests.yml"
+  pull_request:
+    paths:
+      - "site/agentguard/**"
+      - ".github/workflows/agentguard-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run risk-engine regression tests
+        run: node --test site/agentguard/tests/*.test.mjs
+      - name: Check JavaScript syntax
+        run: |
+          node --check site/agentguard/app.js
+          node --check site/agentguard/risk-engine.mjs
