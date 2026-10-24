@@ -155,6 +155,7 @@ function handlePlanInput() {
   latestReport = null;
   scoreChip.textContent = "— / 100";
   delete scoreChip.dataset.level;
+  report.className = "report-empty";
   report.replaceChildren();
   const empty = make("div", "report-empty");
   empty.append(
