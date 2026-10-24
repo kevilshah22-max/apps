@@ -111,7 +111,7 @@ export function scanPlan(input) {
   const findings = RULES.filter(rule => rule.patterns.some(pattern => pattern.test(input)))
     .map(({ id, label, points, advice }) => ({ id, label, points, advice }));
   const score = Math.min(100, findings.reduce((total, finding) => total + finding.points, 0));
-  const level = score >= 60 ? "HIGH RISK" : score >= 25 ? "REVIEW REQUIRED" : "LOWER RISK";
+  const level = score >= 60 ? "HIGH RISK" : score >= 18 ? "REVIEW REQUIRED" : "LOWER RISK";
 
   return { score, level, findings, scannedCharacters: input.length };
 }
