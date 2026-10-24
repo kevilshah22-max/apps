@@ -65,6 +65,16 @@ function runPreflight() {
       : "Preflight complete. No configured patterns matched; manual review is still required.", result.findings.length ? "review" : "success");
   } catch (error) {
     latestReport = null;
+    scoreChip.textContent = "— / 100";
+    delete scoreChip.dataset.level;
+    report.replaceChildren();
+    const empty = make("div", "report-empty");
+    empty.append(
+      make("div", "empty-mark", "!"),
+      make("h3", "", "Scan unavailable"),
+      make("p", "", "The previous result was cleared because this plan could not be scanned.")
+    );
+    report.append(empty);
     setStatus(error instanceof Error ? error.message : "Unable to scan this plan.", "error");
   }
 }
