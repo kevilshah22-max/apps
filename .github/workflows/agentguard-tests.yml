@@ -5,10 +5,12 @@ on:
     branches: [main, feat/agentguard-public-mvp-20261023]
     paths:
       - "site/agentguard/**"
+      - "tests/agentguard/**"
       - ".github/workflows/agentguard-tests.yml"
   pull_request:
     paths:
       - "site/agentguard/**"
+      - "tests/agentguard/**"
       - ".github/workflows/agentguard-tests.yml"
   workflow_dispatch:
 
@@ -31,3 +33,11 @@ jobs:
         run: |
           node --check site/agentguard/app.js
           node --check site/agentguard/risk-engine.mjs
+      - name: Install browser-test dependencies
+        working-directory: tests/agentguard
+        run: npm install --no-audit --no-fund
+      - name: Install Chromium
+        working-directory: tests/agentguard
+        run: npx playwright install --with-deps chromium
+      - name: Run browser smoke tests
+        run: node tests/agentguard/browser-smoke.mjs
