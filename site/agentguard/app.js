@@ -30,6 +30,7 @@ function renderResult(result) {
   latestReport = result;
   scoreChip.textContent = `${result.score} / 100`;
   scoreChip.dataset.level = result.level === "HIGH RISK" ? "high" : result.level === "REVIEW REQUIRED" ? "review" : "low";
+  report.className = "report-content";
   report.replaceChildren();
 
   const verdict = make("div", "verdict");
@@ -67,6 +68,7 @@ function runPreflight() {
     latestReport = null;
     scoreChip.textContent = "— / 100";
     delete scoreChip.dataset.level;
+    report.className = "report-empty";
     report.replaceChildren();
     const empty = make("div", "report-empty");
     empty.append(
@@ -104,6 +106,7 @@ $("#clear").addEventListener("click", () => {
   latestReport = null;
   scoreChip.textContent = "— / 100";
   delete scoreChip.dataset.level;
+  report.className = "report-empty";
   report.replaceChildren();
   const empty = make("div", "report-empty");
   empty.append(make("div", "empty-mark", "✓"), make("h3", "", "No scan yet"), make("p", "", "Run preflight to see which review checks matched the plan."));
