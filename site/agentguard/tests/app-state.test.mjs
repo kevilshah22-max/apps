@@ -62,3 +62,28 @@ test("editing a scanned plan invalidates the old result and blocks stale export"
   exportButton.listeners.click();
   assert.equal(status.textContent, "Run preflight before exporting a report.");
 });
+
+test("a failed scan clears the previous visible score and report", () => {
+  const plan = elements.get("#plan");
+  const scan = elements.get("#scan");
+  const exportButton = elements.get("#export");
+  const score = elements.get("#score");
+  const report = elements.get("#report");
+  const status = elements.get("#status");
+
+  plan.value = "Delete all records in the workspace";
+  scan.listeners.click();
+  assert.equal(score.textContent, "25 / 100");
+
+  // Simulate a programmatic or otherwise invalid value that fails during scanning.
+  plan.value = "x".repeat(50001);
+  scan.listeners.click();
+
+  assert.equal(score.textContent, "— / 100");
+  assert.equal(score.dataset.level, undefined);
+  assert.match(report.children[0].children[1].textContent, /Scan unavailable/);
+  assert.match(status.textContent, /50,000 characters or fewer/);
+  exportButton.listeners.click();
+  assert.equal(status.textContent, "Run preflight before exporting a report.");
+});
+
