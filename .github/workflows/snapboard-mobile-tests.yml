@@ -1,0 +1,33 @@
+name: Snapboard Mobile Storage Tests
+
+on:
+  push:
+    branches:
+      - snapboard-mobile-v1
+    paths:
+      - "apps/snapboard-mobile/**"
+      - ".github/workflows/snapboard-mobile-tests.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "apps/snapboard-mobile/**"
+      - ".github/workflows/snapboard-mobile-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  storage-regression:
+    name: Storage regression tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run local storage regression suite
+        run: node --test apps/snapboard-mobile/storage.test.mjs
