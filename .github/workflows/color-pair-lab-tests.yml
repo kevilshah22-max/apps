@@ -5,12 +5,12 @@ on:
     branches:
       - feat/color-pair-lab-mvp-20261026
     paths:
-      - "app/color-pair-lab/**"
+      - "site/color-pair-lab/**"
       - "tests/color-pair-lab.test.mjs"
       - ".github/workflows/color-pair-lab-tests.yml"
   pull_request:
     paths:
-      - "app/color-pair-lab/**"
+      - "site/color-pair-lab/**"
       - "tests/color-pair-lab.test.mjs"
       - ".github/workflows/color-pair-lab-tests.yml"
 
@@ -26,4 +26,4 @@ jobs:
         with:
           node-version: "22"
       - name: Run WCAG contrast regression tests
-        run: node --experimental-strip-types --test tests/color-pair-lab.test.mjs
+        run: node --test tests/color-pair-lab.test.mjs
