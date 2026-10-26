@@ -7,9 +7,6 @@ on:
       - "site/marketmind/**"
       - "docs/marketmind-architecture.md"
       - "tests/marketmind-smoke.test.mjs"
-      - "site/marketmind/**"
-      - "docs/marketmind-architecture.md"
-      - "tests/marketmind-smoke.test.mjs"
       - "tests/new-products-smoke.test.mjs"
       - ".github/workflows/new-products-smoke.yml"
   push:
@@ -18,6 +15,9 @@ on:
     paths:
       - "site/riskdesk/**"
       - "site/cartoonforge/**"
+      - "site/marketmind/**"
+      - "docs/marketmind-architecture.md"
+      - "tests/marketmind-smoke.test.mjs"
       - "tests/new-products-smoke.test.mjs"
       - ".github/workflows/new-products-smoke.yml"
 permissions:
@@ -31,3 +31,4 @@ jobs:
         with:
           node-version: "22"
       - run: node --test tests/new-products-smoke.test.mjs
+      - run: node --test tests/marketmind-smoke.test.mjs
