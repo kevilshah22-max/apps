@@ -61,10 +61,15 @@ export default function ColorPairLabPage() {
         return;
       }
       const valid = parsed.filter((item): item is SavedPair =>
-        !!item &&
+        typeof item === "object" &&
+        item !== null &&
+        "id" in item &&
         typeof item.id === "string" &&
+        "name" in item &&
         typeof item.name === "string" &&
+        "foreground" in item &&
         typeof item.foreground === "string" &&
+        "background" in item &&
         typeof item.background === "string" &&
         normalizeHex(item.foreground) !== null &&
         normalizeHex(item.background) !== null
