@@ -4,6 +4,9 @@ import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+const axeScriptPath = require.resolve("axe-core/axe.min.js");
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const siteRoot = path.resolve(here, "../../site");
@@ -55,6 +58,17 @@ try {
   await page.goto(baseUrl + "/color-pair-lab/", { waitUntil: "networkidle" });
   assert.match(await page.locator("h1").innerText(), /Good colour/);
   assert.match(await page.locator("#verdict").innerText(), /AA NORMAL PASS/);
+
+  await page.addScriptTag({ path: axeScriptPath });
+  const accessibility = await page.evaluate(async () => window.axe.run(document, {
+    runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] },
+  }));
+  assert.equal(
+    accessibility.violations.length,
+    0,
+    "Initial interface should have no automated WCAG A/AA violations: " +
+      JSON.stringify(accessibility.violations.map((item) => ({ id: item.id, impact: item.impact, targets: item.nodes.map((node) => node.target) }))),
+  );
 
   await page.locator("#foreground-hex").fill("#777777");
   await page.locator("#background-hex").fill("#ffffff");
