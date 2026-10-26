@@ -1,0 +1,27 @@
+name: Bright Future research contract tests
+on:
+  pull_request:
+    paths:
+      - "docs/bright-future-strategy-engine-charter.md"
+      - "schemas/**"
+      - "tests/strategy-contracts.test.mjs"
+      - ".github/workflows/bright-future-contract-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/bright-future-strategy-engine-charter.md"
+      - "schemas/**"
+      - "tests/strategy-contracts.test.mjs"
+      - ".github/workflows/bright-future-contract-tests.yml"
+permissions:
+  contents: read
+jobs:
+  contract-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test tests/strategy-contracts.test.mjs
+      - run: node -e "for (const p of ['schemas/strategy-spec.schema.json','schemas/specialist-result.schema.json']) JSON.parse(require('node:fs').readFileSync(p, 'utf8'))"
