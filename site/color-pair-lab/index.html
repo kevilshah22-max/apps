@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Check colour contrast against WCAG text thresholds, preview a pair and export CSS tokens. Runs locally in your browser.">
+  <meta name="theme-color" content="#f5f7f2">
+  <title>Color Pair Lab — Nexa Forge</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="../" aria-label="Nexa Forge public product suite"><span class="brand-mark">N</span><span><strong>NEXA FORGE</strong><small>DESIGN TOOLS</small></span></a>
+    <span class="local-badge"><span aria-hidden="true"></span> LOCAL-FIRST TOOL</span>
+  </header>
+  <main class="shell">
+    <section class="hero">
+      <p class="kicker">ACCESSIBILITY · COLOUR SYSTEMS</p>
+      <h1>Good colour.<br><em>Clear contrast.</em></h1>
+      <p class="intro">Check a foreground and background pair against WCAG contrast thresholds. Preview it, improve it and export the tokens—without sending colours to a server.</p>
+    </section>
+
+    <section class="workspace" aria-label="Colour contrast workspace">
+      <div class="panel controls">
+        <div class="panel-heading"><div><span class="step">01 / INPUT</span><h2>Build your pair</h2></div><button id="reset" class="subtle-button" type="button">Reset</button></div>
+        <label class="field-label" for="pair-name">Pair name</label>
+        <input id="pair-name" class="text-input" value="My colour pair" maxlength="60">
+        <div class="color-fields">
+          <div>
+            <label class="field-label" for="foreground-hex">Text / foreground</label>
+            <div class="color-row"><input id="foreground-color" aria-label="Choose foreground colour" type="color" value="#1f2937"><input id="foreground-hex" class="hex-input" value="#1f2937" maxlength="7" spellcheck="false" aria-describedby="foreground-help"></div>
+            <small id="foreground-help" class="hint">Use #RGB or #RRGGBB</small>
+          </div>
+          <div>
+            <label class="field-label" for="background-hex">Background</label>
+            <div class="color-row"><input id="background-color" aria-label="Choose background colour" type="color" value="#f8fafc"><input id="background-hex" class="hex-input" value="#f8fafc" maxlength="7" spellcheck="false" aria-describedby="background-help"></div>
+            <small id="background-help" class="hint">Use #RGB or #RRGGBB</small>
+          </div>
+        </div>
+        <div class="recommendation"><span class="recommendation-dot" aria-hidden="true"></span><div><strong>Quick readability fix</strong><p id="recommendation-text">Choose colours to see a suggestion.</p></div><button id="apply-recommendation" type="button">Apply</button></div>
+        <div class="action-row"><button id="save-pair" class="primary-button" type="button">Save pair</button><button id="copy-css" class="secondary-button" type="button">Copy CSS</button><button id="export-json" class="secondary-button" type="button">Export JSON</button></div>
+        <p id="status" class="status" role="status" aria-live="polite">Your colours stay in this browser unless you export them.</p>
+      </div>
+
+      <div class="panel preview-panel">
+        <div class="panel-heading"><div><span class="step">02 / PREVIEW</span><h2>Read it in context</h2></div><span class="live-pill">LIVE</span></div>
+        <article id="preview-card" class="preview-card">
+          <div class="preview-topline"><span>THE DAILY NOTE</span><span>03 MIN READ</span></div>
+          <p class="preview-eyebrow">A LITTLE CLARITY GOES A LONG WAY</p>
+          <h3>Make every word easy to see.</h3>
+          <p class="preview-body">Strong contrast helps people read your interface in different lighting, on different screens and with different visual needs.</p>
+          <span id="preview-link" class="preview-link">Read the guide <span aria-hidden="true">↗</span></span>
+        </article>
+        <div class="ratio-block"><div><span class="step">CONTRAST RATIO</span><strong id="ratio">—</strong></div><span id="verdict" class="fail-pill">CHECK INPUT</span></div>
+        <div id="checks" class="check-list" aria-label="WCAG contrast results"></div>
+      </div>
+    </section>
+
+    <section class="panel saved-section">
+      <div class="panel-heading"><div><span class="step">03 / LIBRARY</span><h2>Saved pairs <span id="saved-count" class="count">0</span></h2></div><button id="export-library" class="subtle-button" type="button" disabled>Export library</button></div>
+      <div id="recovery-banner" class="recovery-banner" role="alert" hidden>
+        <div><strong>Saved library needs attention</strong><p id="recovery-message"></p></div>
+        <div class="recovery-actions"><button id="download-recovery" type="button">Download original data</button><button id="discard-recovery" type="button" disabled>Discard and start fresh</button><button id="retry-storage" type="button" hidden>Retry read</button></div>
+      </div>
+      <div id="saved-list" class="saved-list"><div class="empty-state"><span aria-hidden="true">◒</span><p>No saved pairs yet. Save a combination to keep it in this browser.</p></div></div>
+    </section>
+
+    <footer class="site-footer"><p><strong>Built for clearer interfaces.</strong> Colour checks are a design aid, not a complete accessibility audit.</p><a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html" target="_blank" rel="noreferrer">Read the WCAG guidance ↗</a></footer>
+  </main>
+</body>
+</html>
