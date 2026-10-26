@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexa-forge.github.io/apps/schemas/specialist-result.schema.json",
+  "title": "Bright Future Specialist Result",
+  "description": "Common result contract for deterministic modules and AI research agents.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["module_id", "module_version", "run_id", "as_of", "status", "source_refs", "input_snapshot_ids", "observations", "limitations", "warnings", "confidence_basis", "required_followups"],
+  "properties": {
+    "module_id": { "type": "string", "minLength": 1 },
+    "module_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "as_of": { "type": "string", "format": "date-time" },
+    "status": { "enum": ["OK", "INCOMPLETE", "STALE", "FAILED", "REJECTED", "NOT_CONNECTED"] },
+    "source_refs": { "type": "array", "items": { "type": "object", "required": ["source_id"], "properties": { "source_id": { "type": "string" }, "uri": { "type": "string", "format": "uri" }, "retrieved_at": { "type": "string", "format": "date-time" }, "licence_status": { "enum": ["verified", "unknown", "restricted", "not_applicable"] } }, "additionalProperties": false } },
+    "input_snapshot_ids": { "type": "array", "items": { "type": "string" } },
+    "observations": { "type": "array", "items": { "type": "object", "required": ["claim"], "properties": { "claim": { "type": "string" }, "value": {}, "unit": { "type": "string" }, "direction": { "enum": ["bullish", "bearish", "neutral", "mixed", "unknown"] }, "evidence_refs": { "type": "array", "items": { "type": "string" } }, "method": { "type": "string" }, "calibration_id": { "type": "string" } }, "additionalProperties": true } },
+    "limitations": { "type": "array", "items": { "type": "string" } },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "confidence_basis": { "type": ["string", "null"] },
+    "required_followups": { "type": "array", "items": { "type": "string" } }
+  }
+}
