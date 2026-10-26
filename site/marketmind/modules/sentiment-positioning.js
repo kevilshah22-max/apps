@@ -1,0 +1,7 @@
+/** Aggregate explicitly sourced observations; scores remain descriptive, not predictive. */
+export function aggregateSentiment(observations=[],now=Date.now(),options={}) {
+ const maxAge=Number(options.maxAgeHours??72)*3600000,valid=[],excluded=[];
+ for(const [i,o] of observations.entries()){const score=Number(o?.score),at=Date.parse(o?.observedAt||"");const source=String(o?.sourceName||"").trim(),url=String(o?.sourceUrl||"").trim();if(!Number.isFinite(score)||score < -1||score>1||!Number.isFinite(at)||!source||!url){excluded.push({row:i,reason:"Requires score [-1,1], observation timestamp, source name and URL"});continue}const age=now-at;valid.push({...o,score,ageHours:age/3600000,stale:age<0||age>maxAge,verified:false})}
+ const fresh=valid.filter(o=>!o.stale),mean=fresh.length?fresh.reduce((s,o)=>s+o.score,0)/fresh.length:null;
+ return {asOf:new Date(now).toISOString(),freshObservationCount:fresh.length,staleObservationCount:valid.length-fresh.length,excluded,meanScore:mean,qualitative:mean===null?"INSUFFICIENT FRESH SOURCED OBSERVATIONS":mean>.25?"POSITIVE SOURCE MIX":mean<-.25?"NEGATIVE SOURCE MIX":"MIXED / NEUTRAL SOURCE MIX",observations:valid,warnings:["The score scale is user-defined and sources may not be independent.","Source URLs are not independently fetched or verified.","Sentiment can be stale, manipulated, biased or disconnected from future price movement.","Open interest, funding, options flow and COT require separate licensed/official data adapters."]};
+}
