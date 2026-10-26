@@ -1,0 +1,43 @@
+name: Color Pair Lab Tests
+
+on:
+  push:
+    branches:
+      - feat/color-pair-lab-mvp-20261026
+    paths:
+      - "site/color-pair-lab/**"
+      - "tests/color-pair-lab.test.mjs"
+      - "tests/color-pair-lab/**"
+      - ".github/workflows/color-pair-lab-tests.yml"
+  pull_request:
+    paths:
+      - "site/color-pair-lab/**"
+      - "tests/color-pair-lab.test.mjs"
+      - "tests/color-pair-lab/**"
+      - ".github/workflows/color-pair-lab-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  contrast-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run WCAG contrast regression tests
+        run: node --test tests/color-pair-lab.test.mjs
+      - name: Check browser module syntax
+        run: |
+          node --check site/color-pair-lab/app.js
+          node --check site/color-pair-lab/contrast.mjs
+      - name: Install browser-test dependencies
+        working-directory: tests/color-pair-lab
+        run: npm install --no-audit --no-fund
+      - name: Install Chromium
+        working-directory: tests/color-pair-lab
+        run: npx playwright install --with-deps chromium
+      - name: Run browser smoke tests
+        run: node tests/color-pair-lab/browser-smoke.mjs
