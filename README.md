@@ -1,6 +1,6 @@
-# Gnu Launchpad
+# Nexa Forge Launchpad
 
-Gnu Launchpad is the first internal product for the Gnu product studio: a command centre for taking product ideas from research through launch.
+Nexa Forge Launchpad is the internal product command centre for taking ideas from research through launch.
 
 ## MVP
 - Opportunity pipeline
@@ -10,8 +10,10 @@ Gnu Launchpad is the first internal product for the Gnu product studio: a comman
 - Responsive web UI
 
 ## Run
+```bash
 npm install
 npm run dev
+```
 
-## Next
-Connect the research wing, Linear, Supabase and Vercel; then add authenticated workspaces, live opportunity records and evidence-backed research briefs.
+## Current limitations
+The current pipeline records are sample data held in the interface; the MVP does not yet persist ideas or connect to external services. The next release should add evidence-backed research briefs and a durable opportunity store before authenticated workspaces.
