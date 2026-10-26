@@ -1,0 +1,27 @@
+name: New product smoke tests
+on:
+  pull_request:
+    paths:
+      - "site/riskdesk/**"
+      - "site/cartoonforge/**"
+      - "tests/new-products-smoke.test.mjs"
+      - ".github/workflows/new-products-smoke.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "site/riskdesk/**"
+      - "site/cartoonforge/**"
+      - "tests/new-products-smoke.test.mjs"
+      - ".github/workflows/new-products-smoke.yml"
+permissions:
+  contents: read
+jobs:
+  smoke-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test tests/new-products-smoke.test.mjs
