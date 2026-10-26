@@ -1,0 +1,29 @@
+name: Color Pair Lab Tests
+
+on:
+  push:
+    branches:
+      - feat/color-pair-lab-mvp-20261026
+    paths:
+      - "app/color-pair-lab/**"
+      - "tests/color-pair-lab.test.mjs"
+      - ".github/workflows/color-pair-lab-tests.yml"
+  pull_request:
+    paths:
+      - "app/color-pair-lab/**"
+      - "tests/color-pair-lab.test.mjs"
+      - ".github/workflows/color-pair-lab-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  contrast-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run WCAG contrast regression tests
+        run: node --experimental-strip-types --test tests/color-pair-lab.test.mjs
