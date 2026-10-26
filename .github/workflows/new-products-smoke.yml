@@ -4,6 +4,12 @@ on:
     paths:
       - "site/riskdesk/**"
       - "site/cartoonforge/**"
+      - "site/marketmind/**"
+      - "docs/marketmind-architecture.md"
+      - "tests/marketmind-smoke.test.mjs"
+      - "site/marketmind/**"
+      - "docs/marketmind-architecture.md"
+      - "tests/marketmind-smoke.test.mjs"
       - "tests/new-products-smoke.test.mjs"
       - ".github/workflows/new-products-smoke.yml"
   push:
