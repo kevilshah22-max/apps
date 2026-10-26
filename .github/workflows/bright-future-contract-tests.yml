@@ -14,6 +14,8 @@ on:
       - "docs/bright-future-strategy-engine-charter.md"
       - "schemas/**"
       - "tests/strategy-contracts.test.mjs"
+      - "tests/research-registry.test.mjs"
+      - "research-engine/**"
       - ".github/workflows/bright-future-contract-tests.yml"
 permissions:
   contents: read
