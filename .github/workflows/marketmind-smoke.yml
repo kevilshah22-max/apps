@@ -1,0 +1,24 @@
+name: MarketMind module smoke tests
+on:
+  pull_request:
+    paths:
+      - "site/marketmind/**"
+      - "tests/marketmind-smoke.test.mjs"
+      - ".github/workflows/marketmind-smoke.yml"
+  push:
+    branches: [main]
+    paths:
+      - "site/marketmind/**"
+      - "tests/marketmind-smoke.test.mjs"
+      - ".github/workflows/marketmind-smoke.yml"
+permissions:
+  contents: read
+jobs:
+  smoke-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test tests/marketmind-smoke.test.mjs
