@@ -1,0 +1,9 @@
+/** Ratios from user-supplied statement values; values and periods must be consistent. */
+export function calculateFundamentals(x={}) {
+ const n=k=>x[k]===null||x[k]===""||x[k]===undefined?null:Number(x[k]);
+ const revenue=n("revenue"),grossProfit=n("grossProfit"),operatingIncome=n("operatingIncome"),netIncome=n("netIncome"),currentAssets=n("currentAssets"),currentLiabilities=n("currentLiabilities"),totalDebt=n("totalDebt"),equity=n("equity"),operatingCashFlow=n("operatingCashFlow"),capex=n("capitalExpenditure");
+ const ratio=(a,b)=>Number.isFinite(a)&&Number.isFinite(b)&&b!==0?a/b:null;
+ const out={grossMargin:ratio(grossProfit,revenue),operatingMargin:ratio(operatingIncome,revenue),netMargin:ratio(netIncome,revenue),currentRatio:ratio(currentAssets,currentLiabilities),debtToEquity:ratio(totalDebt,equity),freeCashFlow:Number.isFinite(operatingCashFlow)&&Number.isFinite(capex)?operatingCashFlow-capex:null};
+ const missing=["periodEnd","currency","revenue","grossProfit","operatingIncome","netIncome","currentAssets","currentLiabilities","totalDebt","equity","operatingCashFlow","capitalExpenditure"].filter(k=>x[k]===undefined||x[k]===null||x[k]==="");
+ return {entity:String(x.entity||""),periodEnd:x.periodEnd||null,currency:x.currency||null,ratios:Object.fromEntries(Object.entries(out).map(([k,v])=>[k,v===null?null:k.endsWith("Margin")?v*100:v])),missingInputs:missing,warnings:["Ratios are arithmetic on supplied values and are not independently verified.","Check accounting definitions, reporting period, currency, sector comparability and one-off items.","Negative or zero denominators can make common ratio interpretations misleading."],limitations:["No statements or market data are fetched by this module.","No valuation multiple or fair value is produced without a defensible sourced model."]};
+}
