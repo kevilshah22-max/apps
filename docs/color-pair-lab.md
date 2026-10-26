@@ -21,6 +21,10 @@ Run the unit suite with Node.js 22:
 node --experimental-strip-types --test tests/color-pair-lab.test.mjs
 ```
 
+## Saved-data recovery
+
+The saved-pair library is stored in browser local storage. If its JSON or schema is invalid, the app pauses library writes and offers an export of the original stored value before the user can explicitly discard it. If browser storage cannot be read at all, saving remains paused and the page offers a retry.
+
 ## Important limitations
 
 This tool evaluates solid foreground/background colour pairs only. It does not inspect a rendered website, images, gradients, opacity, hover/focus states, font-weight/size semantics, or all WCAG criteria. A passing contrast result is one input to accessibility review, not a claim that a site conforms to WCAG.
