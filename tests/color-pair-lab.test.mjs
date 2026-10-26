@@ -7,7 +7,7 @@ import {
   formatRatio,
   normalizeHex,
   relativeLuminance,
-} from "../app/color-pair-lab/contrast.ts";
+} from "../site/color-pair-lab/contrast.mjs";
 
 test("normalizes three-digit and six-digit hex colours", () => {
   assert.equal(normalizeHex("#AbC"), "#aabbcc");
