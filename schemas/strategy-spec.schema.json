@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexa-forge.github.io/apps/schemas/strategy-spec.schema.json",
+  "title": "Bright Future Strategy Specification",
+  "description": "Versioned, falsifiable strategy definition. A valid document is not evidence of profitability or permission to trade live.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["strategy_id", "version", "name", "hypothesis", "markets", "timeframes", "data_requirements", "rules", "execution_assumptions", "validation_plan", "risk_limits", "failure_modes"],
+  "properties": {
+    "strategy_id": { "type": "string", "minLength": 1, "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "name": { "type": "string", "minLength": 3, "maxLength": 120 },
+    "hypothesis": { "type": "string", "minLength": 20 },
+    "rationale": { "type": "string" },
+    "markets": { "type": "array", "minItems": 1, "items": { "enum": ["equities", "fx", "commodities", "crypto_spot", "crypto_derivatives", "options", "rates", "multi_asset"] }, "uniqueItems": true },
+    "instruments": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "timeframes": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "sessions": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "data_requirements": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["field", "frequency", "point_in_time_required"],
+        "properties": {
+          "field": { "type": "string", "minLength": 1 },
+          "source_preference": { "type": "string" },
+          "frequency": { "type": "string", "minLength": 1 },
+          "point_in_time_required": { "type": "boolean" },
+          "adjustment_policy": { "type": "string" },
+          "max_staleness_seconds": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "rules": {
+      "type": "object", "additionalProperties": false,
+      "required": ["entry", "exit", "invalidation", "sizing", "no_trade_conditions"],
+      "properties": {
+        "entry": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "exit": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "invalidation": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "sizing": { "type": "string", "minLength": 1 },
+        "holding_period": { "type": "string" },
+        "no_trade_conditions": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "parameters": { "type": "object" }
+      }
+    },
+    "execution_assumptions": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fill_model", "fees_model", "spread_slippage_model"],
+      "properties": {
+        "fill_model": { "type": "string", "minLength": 1 },
+        "fees_model": { "type": "string", "minLength": 1 },
+        "spread_slippage_model": { "type": "string", "minLength": 1 },
+        "funding_borrow_roll_model": { "type": "string" },
+        "liquidity_constraints": { "type": "string" },
+        "latency_assumption": { "type": "string" }
+      }
+    },
+    "validation_plan": {
+      "type": "object", "additionalProperties": false,
+      "required": ["benchmark", "train_window", "validation_window", "test_window", "walk_forward"],
+      "properties": {
+        "benchmark": { "type": "string", "minLength": 1 },
+        "train_window": { "type": "string", "minLength": 1 },
+        "validation_window": { "type": "string", "minLength": 1 },
+        "test_window": { "type": "string", "minLength": 1 },
+        "walk_forward": { "type": "boolean" },
+        "multiple_testing_correction": { "type": "string" },
+        "minimum_trades": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "risk_limits": {
+      "type": "object", "minProperties": 1,
+      "properties": {
+        "max_position_pct_equity": { "type": "number", "exclusiveMinimum": 0, "maximum": 100 },
+        "max_portfolio_drawdown_pct": { "type": "number", "exclusiveMinimum": 0, "maximum": 100 },
+        "max_leverage": { "type": "number", "minimum": 0 },
+        "max_daily_loss_pct": { "type": "number", "exclusiveMinimum": 0, "maximum": 100 },
+        "max_concentration_pct": { "type": "number", "exclusiveMinimum": 0, "maximum": 100 }
+      },
+      "additionalProperties": true
+    },
+    "failure_modes": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+    "created_at": { "type": "string", "format": "date-time" },
+    "change_log": { "type": "array", "items": { "type": "string" } },
+    "approval_state": { "enum": ["research_only", "backtest_candidate", "out_of_sample_candidate", "paper_candidate", "rejected"], "default": "research_only" }
+  }
+}
