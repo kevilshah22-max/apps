@@ -5,6 +5,8 @@ on:
       - "docs/bright-future-strategy-engine-charter.md"
       - "schemas/**"
       - "tests/strategy-contracts.test.mjs"
+      - "tests/research-registry.test.mjs"
+      - "research-engine/**"
       - ".github/workflows/bright-future-contract-tests.yml"
   push:
     branches: [main]
@@ -24,4 +26,5 @@ jobs:
         with:
           node-version: "22"
       - run: node --test tests/strategy-contracts.test.mjs
+      - run: node --test tests/research-registry.test.mjs
       - run: node -e "for (const p of ['schemas/strategy-spec.schema.json','schemas/specialist-result.schema.json']) JSON.parse(require('node:fs').readFileSync(p, 'utf8'))"
