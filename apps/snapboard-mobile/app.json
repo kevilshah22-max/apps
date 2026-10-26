@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "Snapboard",
+    "slug": "snapboard",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "snapboard",
+    "ios": {
+      "bundleIdentifier": "com.nexaforge.snapboard",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.nexaforge.snapboard",
+      "adaptiveIcon": {
+        "backgroundColor": "#151C2F"
+      }
+    },
+    "plugins": []
+  }
+}
