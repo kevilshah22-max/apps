@@ -39,13 +39,27 @@ export default function ColorPairLabPage() {
   const [pairName, setPairName] = useState("My colour pair");
   const [saved, setSaved] = useState<SavedPair[]>([]);
   const [status, setStatus] = useState("");
+  const [recoveryData, setRecoveryData] = useState<string | null>(null);
+  const [recoveryExported, setRecoveryExported] = useState(false);
+  const [storageBlocked, setStorageBlocked] = useState(false);
 
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
-      const parsed: unknown = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return;
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        setRecoveryData(raw);
+        setStatus("Saved data is unreadable. Export the original before choosing to reset the library.");
+        return;
+      }
+      if (!Array.isArray(parsed)) {
+        setRecoveryData(raw);
+        setStatus("Saved data has an unexpected format. Export the original before choosing to reset the library.");
+        return;
+      }
       const valid = parsed.filter((item): item is SavedPair =>
         !!item &&
         typeof item.id === "string" &&
@@ -56,8 +70,13 @@ export default function ColorPairLabPage() {
         normalizeHex(item.background) !== null
       );
       setSaved(valid);
+      if (valid.length !== parsed.length) {
+        setRecoveryData(raw);
+        setStatus("Some saved entries are invalid. Editing is paused until the original data is exported and the reset is confirmed.");
+      }
     } catch {
-      setStatus("Saved pairs could not be read. Your current colours are still available.");
+      setStorageBlocked(true);
+      setStatus("Browser storage could not be read. Saving is paused; retry after checking browser storage permissions.");
     }
   }, []);
 
@@ -78,6 +97,10 @@ export default function ColorPairLabPage() {
   );
 
   function persist(next: SavedPair[]) {
+    if (recoveryData !== null || storageBlocked) {
+      setStatus("Saving is paused until the storage recovery issue is resolved.");
+      return;
+    }
     setSaved(next);
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
@@ -88,6 +111,10 @@ export default function ColorPairLabPage() {
   }
 
   function savePair() {
+    if (recoveryData !== null || storageBlocked) {
+      setStatus("Resolve the saved-library recovery warning before saving new pairs.");
+      return;
+    }
     if (!fg || !bg) {
       setStatus("Enter valid hex colours before saving.");
       return;
@@ -101,6 +128,31 @@ export default function ColorPairLabPage() {
       background: bg,
     };
     persist([record, ...saved].slice(0, 50));
+  }
+
+  function exportRecovery() {
+    if (recoveryData === null) {
+      setStatus("No recoverable original data is available to export.");
+      return;
+    }
+    downloadText("color-pair-lab-recovery.txt", recoveryData, "text/plain;charset=utf-8");
+    setRecoveryExported(true);
+    setStatus("Original saved data exported. You may now explicitly discard the unreadable library.");
+  }
+
+  function discardRecovery() {
+    if (recoveryData === null || !recoveryExported) return;
+    if (!window.confirm("Discard the unreadable saved library? The recovery copy has been downloaded. This cannot be undone from this browser.")) return;
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+      setSaved([]);
+      setRecoveryData(null);
+      setRecoveryExported(false);
+      setStorageBlocked(false);
+      setStatus("Saved library reset. You can now save new colour pairs.");
+    } catch {
+      setStatus("Browser storage could not be reset. The recovery warning remains active.");
+    }
   }
 
   async function copyCss() {
@@ -245,6 +297,21 @@ export default function ColorPairLabPage() {
             setStatus("Saved pairs exported.");
           }}>Export library</button>
         </div>
+        {(recoveryData !== null || storageBlocked) && (
+          <div className={styles.recoveryBanner} role="alert">
+            <div>
+              <strong>Saved library needs attention</strong>
+              <p>{storageBlocked && recoveryData === null
+                ? "Browser storage could not be read. Saving is paused to avoid replacing data unexpectedly. Retry the page after checking browser storage permissions."
+                : "Some saved data could not be validated. The original is preserved in memory; download it before explicitly discarding the unreadable library."}</p>
+            </div>
+            <div className={styles.recoveryActions}>
+              {recoveryData !== null && <button type="button" onClick={exportRecovery}>Download original data</button>}
+              {recoveryData !== null && <button type="button" disabled={!recoveryExported} onClick={discardRecovery}>Discard and start fresh</button>}
+              {storageBlocked && recoveryData === null && <button type="button" onClick={() => window.location.reload()}>Retry read</button>}
+            </div>
+          </div>
+        )}
         {saved.length === 0 ? (
           <div className={styles.emptyState}><span className={styles.emptyIcon}>◒</span><p>No saved pairs yet. Save a combination to keep it in this browser.</p></div>
         ) : (
