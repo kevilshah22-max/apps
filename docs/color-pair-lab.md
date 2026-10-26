@@ -1,6 +1,6 @@
 # Color Pair Lab
 
-Color Pair Lab is a local-first workspace for checking foreground/background contrast ratios against common WCAG text thresholds.
+The public static app lives at `site/color-pair-lab/` and can be served directly by GitHub Pages. Color Pair Lab is a local-first workspace for checking foreground/background contrast ratios against common WCAG text thresholds.
 
 ## MVP features
 
@@ -18,7 +18,7 @@ Color Pair Lab is a local-first workspace for checking foreground/background con
 Run the unit suite with Node.js 22:
 
 ```sh
-node --experimental-strip-types --test tests/color-pair-lab.test.mjs
+node --test tests/color-pair-lab.test.mjs
 ```
 
 ## Saved-data recovery
