@@ -9,11 +9,11 @@ const pages = [
 ];
 
 for (const page of pages) {
-  test(\`\${page.title}: inline JavaScript parses and key features exist\`, async () => {
+  test(`${page.title}: inline JavaScript parses and key features exist`, async () => {
     const html = await readFile(page.path, "utf8");
     assert.match(html, /<!doctype html>/i);
-    assert.match(html, new RegExp(\`<title>\${page.title}\`));
-    for (const marker of page.markers) assert.ok(html.includes(marker), \`Missing feature marker: \${marker}\`);
+    assert.match(html, new RegExp(`<title>${page.title}`));
+    for (const marker of page.markers) assert.ok(html.includes(marker), `Missing feature marker: ${marker}`);
     const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/gi)];
     assert.ok(scripts.length > 0, "Expected an inline script");
     for (const match of scripts) assert.doesNotThrow(() => new vm.Script(match[1]), "Inline script must parse");
