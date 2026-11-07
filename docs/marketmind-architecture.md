@@ -30,6 +30,8 @@ Every module returns: `module_id`, `as_of`, `source`, `inputs`, `observations`, 
 - Never claim a branch is deployed until merged and the actual Pages deployment is verified.
 
 ## Current implementation status
-- RiskDesk: offline-first risk calculator and local journal prototype (separate feature PR).
-- MarketMind: initial CSV-based analysis shell is being built; it is not a live-data service.
-- Other workstreams above are planned specialist branches, not yet completed bots or services.
+- MarketMind: public CSV-based analysis shell and unified specialist workbench are implemented. Technical, strategy, portfolio-risk, catalyst, fundamental, cross-asset, sentiment, thesis and independent-review modules can be run locally; several specialist inputs still require user-supplied JSON.
+- Bright Future deterministic backtest engine: implemented in Node and browser-compatible form. It enforces chronological OHLCV with explicit timezone offsets, immutable point-in-time strategy history, next-bar-open default fills, fees/slippage, dataset SHA-256, equity curve, trade metrics and a buy-and-hold baseline. The first browser strategy is a long-only EMA regime rule.
+- RiskDesk: offline-first risk calculator and local journal prototype.
+- Not connected: live/delayed market data providers, news or macro feeds, broker APIs, autonomous trading agents, calibrated probability forecasts or guaranteed targets.
+- Portfolio-level multi-instrument simulation, walk-forward orchestration, multiple-testing controls and robust statistical inference remain future research milestones.

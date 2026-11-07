@@ -4,6 +4,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
+import { runBacktest } from "../site/marketmind/modules/backtest-engine.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const pagePath = path.join(root, "site/marketmind/index.html");
@@ -29,4 +30,39 @@ test("every present specialist module parses", async () => {
     const cjsParseable = src.replace(/^import .*;\s*$/gm, "").replace(/\bexport\s+(?=(function|const|class)\b)/g, "");
     assert.doesNotThrow(() => new vm.Script(cjsParseable), file + " must parse after stripping ESM import/export declarations");
   }
+});
+
+const backtestBars = () => [
+  { timestamp: "2026-01-01T00:00:00Z", open: 100, high: 102, low: 99, close: 101, volume: 1000 },
+  { timestamp: "2026-01-02T00:00:00Z", open: 102, high: 104, low: 101, close: 103, volume: 1100 },
+  { timestamp: "2026-01-03T00:00:00Z", open: 104, high: 105, low: 102, close: 103, volume: 900 },
+  { timestamp: "2026-01-04T00:00:00Z", open: 101, high: 102, low: 98, close: 99, volume: 1200 }
+];
+
+test("browser backtest engine is deterministic and cost-aware", async () => {
+  const input = { bars: backtestBars(), onBar: ({ index }) => ({ targetPosition: index < 2 ? 1 : 0 }), initialCash: 1000, feeBps: 10, slippageBps: 20 };
+  const first = await runBacktest(input);
+  const second = await runBacktest(input);
+  assert.deepEqual(first, second);
+  assert.equal(first.dataset.sha256.length, 64);
+  assert.equal(first.assumptions.fillModel, "next-bar-open");
+  assert.ok(first.metrics.totalFees > 0);
+  assert.ok(first.metrics.totalSlippageCost > 0);
+  assert.ok(first.benchmark.definition.includes("Buy one unit"));
+});
+
+test("browser backtest engine rejects timestamps without explicit timezone", async () => {
+  const invalid = backtestBars();
+  invalid[0].timestamp = "2026-01-01T00:00:00";
+  await assert.rejects(() => runBacktest({ bars: invalid, onBar: () => ({ targetPosition: 0 }) }), /explicit timezone/);
+});
+
+test("browser backtest strategy history cannot see future bars", async () => {
+  const firstBars = backtestBars();
+  const changedFuture = backtestBars();
+  changedFuture[3] = { ...changedFuture[3], open: 180, high: 190, low: 170, close: 185, volume: 9999 };
+  const strategy = ({ history }) => ({ targetPosition: history.length > 1 && history.at(-1).close > history[0].close ? 1 : 0 });
+  const first = await runBacktest({ bars: firstBars, onBar: strategy });
+  const second = await runBacktest({ bars: changedFuture, onBar: strategy });
+  assert.deepEqual(first.equityCurve.slice(0, 3), second.equityCurve.slice(0, 3));
 });
