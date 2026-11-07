@@ -4,6 +4,8 @@ on:
     paths:
       - "cartoonforge-agent/**"
       - "tests/test_script_agent.py"
+      - "tests/test_cartoonforge_browser.py"
+      - "site/cartoonforge/index.html"
       - "tests/cartoonforge_agent_test_loader.py"
       - "tests/test_render_agent.py"
       - ".github/workflows/cartoonforge-agent-tests.yml"
@@ -25,4 +27,5 @@ jobs:
           python-version: "3.12"
       - run: python -m unittest discover -s tests -p 'test_render_agent.py' -v
       - run: python -m unittest discover -s tests -p 'test_script_agent.py' -v
+      - run: python -m unittest discover -s tests -p 'test_cartoonforge_browser.py' -v
       - run: python -m py_compile cartoonforge-agent/render_agent.py cartoonforge-agent/script_agent.py
