@@ -34,6 +34,45 @@ A GPU and suitable model are strongly recommended for practical render times. Th
 5. Identify the node ID for the positive CLIP text encoder. Optionally identify the negative text encoder and sampler node. For reference conditioning, add a LoadImage or compatible IP-Adapter/reference-image node to the workflow and identify its `inputs.image` node ID.
 6. Save the API workflow JSON locally, for example as `workflow-api.json`.
 
+## Local AI script-to-storyboard agent
+
+The companion `script_agent.py` converts a text script into the same project JSON format consumed by the render agent. It uses a model already installed in **local Ollama**; the script is sent to your configured local Ollama server, not a hosted paid API.
+
+1. Install Ollama and download a model that fits your computer's memory.
+2. Start the local Ollama service and verify the model is available.
+3. Save your character bible as JSON, for example:
+
+```json
+{
+  "name": "Pip",
+  "species": "fox",
+  "color": "#ff9d55",
+  "face": "heart-shaped",
+  "eyes": "large green eyes",
+  "hair_or_fur": "soft orange fur",
+  "proportions": "small round body",
+  "outfit": "blue scarf",
+  "markings": "white tail tip",
+  "accessories": "brass star pendant"
+}
+```
+
+```bash
+python cartoonforge-agent/script_agent.py \
+  --script ./story.txt \
+  --character-json ./character.json \
+  --model YOUR_LOCAL_OLLAMA_MODEL \
+  --title "The Moon Garden" \
+  --genre "Whimsical adventure" \
+  --max-scenes 12 \
+  --output ./cartoonforge-project.json
+```
+
+4. Review the generated scene visuals, beats, dialogue and durations against the original script. The agent cannot guarantee perfect story fidelity.
+5. Pass the generated JSON to `render_agent.py` using the ComfyUI and FFmpeg instructions below.
+
+The output includes a generation record identifying the local model and source-script character count. The agent validates the returned JSON and rejects missing visuals, invalid durations or excessive scene counts. Local model quality and hardware determine the result; no model weights are bundled.
+
 ## Render
 
 ```bash
