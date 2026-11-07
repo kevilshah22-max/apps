@@ -3,6 +3,7 @@ import { ema, rsi, macd, atr, bollinger, supportResistance } from "./technical.j
 import { runBacktest } from "./backtest-engine.mjs";
 import { runPortfolioBacktest } from "./portfolio-backtest.mjs";
 import { screenStrategyCandidates } from "../../../research-engine/candidate-lab.mjs";
+import { evaluateWalkForward } from "../../../research-engine/walk-forward.mjs";
 import { buildThesis } from "./thesis-planner.js";
 import { analysePortfolio } from "./portfolio-risk.js";
 import { auditCatalysts } from "./catalyst-radar.js";
@@ -38,6 +39,32 @@ function emaLast(history, period) {
   return value;
 }
 
+
+
+async function runWalkForwardResearch() {
+  try {
+    const source = window.marketmindGetCandles?.() || [];
+    if (source.length < 2) throw new TypeError("Load and analyse OHLCV data first.");
+    const bars = source.map(bar => ({
+      timestamp: bar.time, open: bar.open, high: bar.high, low: bar.low,
+      close: bar.close, volume: bar.volume ?? 0
+    }));
+    const trainWindow = Number($("wfTrainWindow").value);
+    const testWindow = Number($("wfTestWindow").value);
+    const result = await evaluateWalkForward({
+      bars, trainWindow, testWindow, step: testWindow,
+      maxCandidates: 21, initialCash: 10000, feeBps: 5, slippageBps: 5,
+      maxPositionUnits: 1, strategyVersion: "1.0.0",
+      codeVersion: "marketmind-walk-forward"
+    });
+    $("candidateStatus").textContent = `Walk-forward complete: ${result.foldCount} chronological folds. All results remain research-only and promotion-ineligible; preserve a final untouched holdout.`;
+    $("candidateReport").textContent = JSON.stringify(result, null, 2);
+  } catch (error) {
+    $("candidateStatus").textContent = "Walk-forward run rejected: " + error.message;
+    $("candidateReport").textContent = "No walk-forward result generated. Check explicit timezone timestamps, history length and fold settings.";
+  }
+}
+$("runWalkForward")?.addEventListener("click", runWalkForwardResearch);
 
 async function runCandidateScreen() {
   try {

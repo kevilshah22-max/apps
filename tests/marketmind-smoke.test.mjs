@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { runBacktest } from "../site/marketmind/modules/backtest-engine.mjs";
 import { runPortfolioBacktest } from "../site/marketmind/modules/portfolio-backtest.mjs";
 import { screenStrategyCandidates } from "../research-engine/candidate-lab.mjs";
+import { evaluateWalkForward } from "../research-engine/walk-forward.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const pagePath = path.join(root, "site/marketmind/index.html");
@@ -15,7 +16,7 @@ test("MarketMind page has its core workflow and parses inline JavaScript", async
   const html = await readFile(pagePath, "utf8");
   assert.match(html, /<!doctype html>/i);
   assert.ok(html.includes('src="./modules/unified-workbench.js"'), "Unified workbench module must be wired into the page");
-  for (const marker of ["MarketMind", "OHLCV CSV", "Analyse candles", "Specialist branches", "No live feed", "Multi-asset portfolio lab", "Run multi-asset backtest", "Strategy candidate research lab", "Screen strategy candidates from loaded data"]) {
+  for (const marker of ["MarketMind", "OHLCV CSV", "Analyse candles", "Specialist branches", "No live feed", "Multi-asset portfolio lab", "Run multi-asset backtest", "Strategy candidate research lab", "Screen strategy candidates from loaded data", "Run walk-forward validation", "Out-of-sample bars per fold"]) {
     assert.ok(html.includes(marker), "Missing MarketMind marker: " + marker);
   }
   const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/gi)];
@@ -101,4 +102,20 @@ test("candidate lab can be imported by the browser workbench and remains researc
   assert.equal(result.candidateCount, 2);
   assert.ok(result.ranking.every(item => item.promotionEligible === false));
   assert.ok(result.warnings.some(item => item.includes("multiple-testing")));
+});
+
+test("walk-forward evaluator is wired to the MarketMind workbench", async () => {
+  const rows = [];
+  let close = 100;
+  for (let i = 0; i < 100; i += 1) {
+    const open = close;
+    close += Math.sin(i / 4) * 1.2 + 0.1;
+    rows.push({ timestamp: new Date(Date.UTC(2026, 0, 1 + i)).toISOString(),
+      open, high: Math.max(open, close) + 1, low: Math.min(open, close) - 1,
+      close, volume: 1000 + i });
+  }
+  const result = await evaluateWalkForward({ bars: rows, trainWindow: 80, testWindow: 20, step: 20, maxCandidates: 2 });
+  assert.equal(result.foldCount, 1);
+  assert.equal(result.promotionEligible, false);
+  assert.equal(result.folds[0].outOfSample.barCount, 20);
 });
