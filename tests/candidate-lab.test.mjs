@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { screenStrategyCandidates, candidateFamilies } from "../research-engine/candidate-lab.mjs";
+import { screenStrategyCandidates, candidateFamilies } from "../site/marketmind/modules/candidate-lab.mjs";
 
 const bars = () => {
   const result = [];
