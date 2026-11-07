@@ -1,0 +1,25 @@
+name: CartoonForge local render-agent tests
+on:
+  pull_request:
+    paths:
+      - "cartoonforge-agent/**"
+      - "tests/test_render_agent.py"
+      - ".github/workflows/cartoonforge-agent-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "cartoonforge-agent/**"
+      - "tests/test_render_agent.py"
+      - ".github/workflows/cartoonforge-agent-tests.yml"
+permissions:
+  contents: read
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m unittest discover -s tests -p 'test_render_agent.py' -v
+      - run: python -m py_compile cartoonforge-agent/render_agent.py
