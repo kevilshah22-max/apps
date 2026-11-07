@@ -26,7 +26,7 @@ function rsiLast(values, period) {
   return 100 - 100 / (1 + gain / loss);
 }
 
-function candidateDefinitions() {
+export function createStrategyCandidates() {
   const candidates = [];
   for (const fast of [5, 10, 15]) {
     for (const slow of [30, 50, 80]) {
@@ -93,7 +93,7 @@ export async function screenStrategyCandidates({
 } = {}) {
   if (!Array.isArray(bars) || bars.length < 2) throw new TypeError("bars must contain at least two OHLCV records");
   if (!Number.isInteger(maxCandidates) || maxCandidates < 1 || maxCandidates > 100) throw new RangeError("maxCandidates must be an integer from 1 to 100");
-  const definitions = candidateDefinitions().slice(0, maxCandidates);
+  const definitions = createStrategyCandidates().slice(0, maxCandidates);
   const results = [];
   for (const candidate of definitions) {
     const backtest = await runBacktest({
