@@ -1,0 +1,27 @@
+name: Bright Future backtest engine tests
+on:
+  pull_request:
+    paths:
+      - "research-engine/**"
+      - "tests/backtest-engine.test.mjs"
+      - "tests/research-registry.test.mjs"
+      - ".github/workflows/bright-future-backtest-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "research-engine/**"
+      - "tests/backtest-engine.test.mjs"
+      - "tests/research-registry.test.mjs"
+      - ".github/workflows/bright-future-backtest-tests.yml"
+permissions:
+  contents: read
+jobs:
+  backtest-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test tests/backtest-engine.test.mjs
+      - run: node --test tests/research-registry.test.mjs
