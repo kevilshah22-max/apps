@@ -2,6 +2,7 @@ import { validateOHLCV } from "./data-integrity.js";
 import { ema, rsi, macd, atr, bollinger, supportResistance } from "./technical.js";
 import { runBacktest } from "./backtest-engine.mjs";
 import { runPortfolioBacktest } from "./portfolio-backtest.mjs";
+import { screenStrategyCandidates } from "../../../research-engine/candidate-lab.mjs";
 import { buildThesis } from "./thesis-planner.js";
 import { analysePortfolio } from "./portfolio-risk.js";
 import { auditCatalysts } from "./catalyst-radar.js";
@@ -36,6 +37,29 @@ function emaLast(history, period) {
   }
   return value;
 }
+
+
+async function runCandidateScreen() {
+  try {
+    const source = window.marketmindGetCandles?.() || [];
+    if (source.length < 2) throw new TypeError("Load and analyse OHLCV data first.");
+    const bars = source.map(bar => ({
+      timestamp: bar.time, open: bar.open, high: bar.high, low: bar.low,
+      close: bar.close, volume: bar.volume ?? 0
+    }));
+    const result = await screenStrategyCandidates({
+      bars, initialCash: 10000, feeBps: 5, slippageBps: 5,
+      maxPositionUnits: 1, maxCandidates: 30,
+      strategyVersion: "1.0.0", codeVersion: "marketmind-candidate-lab"
+    });
+    $("candidateStatus").textContent = `Completed ${result.candidateCount} candidate screens. All remain IN_SAMPLE_SCREEN_ONLY and promotion-ineligible. Dataset timezone and provenance must be verified.`;
+    $("candidateReport").textContent = JSON.stringify(result, null, 2);
+  } catch (error) {
+    $("candidateStatus").textContent = "Candidate screen rejected: " + error.message;
+    $("candidateReport").textContent = "No candidate ranking generated. Supply valid OHLCV timestamps with explicit UTC offsets.";
+  }
+}
+$("runCandidateScreen")?.addEventListener("click", runCandidateScreen);
 
 async function runMultiAssetPortfolio() {
   try {
