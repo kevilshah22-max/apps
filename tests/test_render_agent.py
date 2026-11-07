@@ -75,6 +75,25 @@ class CartoonForgeAgentTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "PNG, JPG, JPEG or WEBP"):
                 AGENT.upload_reference_image("http://127.0.0.1:8188", path)
 
+    def test_scene_timeline_uses_per_scene_duration_and_dialogue(self):
+        timeline = AGENT.build_scene_timeline([
+            {"title": "Intro", "duration": 4, "narration": "Welcome"},
+            {"title": "Action", "duration": 7.5, "dialogue": "Run!"},
+            {"title": "Outro", "beat": "A quiet ending"}
+        ], 6)
+        self.assertEqual([item["duration_seconds"] for item in timeline], [4.0, 7.5, 6.0])
+        self.assertEqual([item["start_seconds"] for item in timeline], [0.0, 4.0, 11.5])
+        self.assertEqual([item["end_seconds"] for item in timeline], [4.0, 11.5, 17.5])
+        self.assertEqual([item["text"] for item in timeline], ["Welcome", "Run!", "A quiet ending"])
+
+    def test_scene_timeline_rejects_invalid_duration_and_long_text(self):
+        with self.assertRaisesRegex(ValueError, "duration"):
+            AGENT.build_scene_timeline([{"duration": 0}], 6)
+        with self.assertRaisesRegex(ValueError, "duration"):
+            AGENT.build_scene_timeline([{"duration": 301}], 6)
+        with self.assertRaisesRegex(ValueError, "10000 characters"):
+            AGENT.build_scene_timeline([{"narration": "x" * 10001}], 6)
+
     def test_video_output_is_preferred_over_image_keyframe(self):
         history = {"outputs": {
             "1": {"images": [{"filename": "keyframe.png"}]},
