@@ -6,8 +6,8 @@ import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 import { runBacktest } from "../site/marketmind/modules/backtest-engine.mjs";
 import { runPortfolioBacktest } from "../site/marketmind/modules/portfolio-backtest.mjs";
-import { screenStrategyCandidates } from "../research-engine/candidate-lab.mjs";
-import { evaluateWalkForward } from "../research-engine/walk-forward.mjs";
+import { screenStrategyCandidates } from "../site/marketmind/modules/candidate-lab.mjs";
+import { evaluateWalkForward } from "../site/marketmind/modules/walk-forward.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const pagePath = path.join(root, "site/marketmind/index.html");

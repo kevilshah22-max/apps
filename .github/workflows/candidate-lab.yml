@@ -5,7 +5,9 @@ on:
     branches: [main]
     paths:
       - "research-engine/candidate-lab.mjs"
+      - "site/marketmind/modules/candidate-lab.mjs"
       - "research-engine/walk-forward.mjs"
+      - "site/marketmind/modules/walk-forward.mjs"
       - "research-engine/backtest.mjs"
       - "site/marketmind/modules/backtest-engine.mjs"
       - "tests/candidate-lab.test.mjs"
