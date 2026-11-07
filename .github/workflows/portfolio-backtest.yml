@@ -1,0 +1,27 @@
+name: Bright Future portfolio backtest tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/marketmind/modules/portfolio-backtest.mjs"
+      - "tests/portfolio-backtest.test.mjs"
+      - ".github/workflows/portfolio-backtest.yml"
+  pull_request:
+    paths:
+      - "site/marketmind/modules/portfolio-backtest.mjs"
+      - "tests/portfolio-backtest.test.mjs"
+      - ".github/workflows/portfolio-backtest.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  portfolio-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test tests/portfolio-backtest.test.mjs
