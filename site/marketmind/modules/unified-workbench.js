@@ -1,6 +1,7 @@
 import { validateOHLCV } from "./data-integrity.js";
 import { ema, rsi, macd, atr, bollinger, supportResistance } from "./technical.js";
 import { runBacktest } from "./backtest-engine.mjs";
+import { runPortfolioBacktest } from "./portfolio-backtest.mjs";
 import { buildThesis } from "./thesis-planner.js";
 import { analysePortfolio } from "./portfolio-risk.js";
 import { auditCatalysts } from "./catalyst-radar.js";
@@ -35,6 +36,45 @@ function emaLast(history, period) {
   }
   return value;
 }
+
+async function runMultiAssetPortfolio() {
+  try {
+    const input = JSON.parse($("portfolioSeriesJson").value);
+    const series = input.series;
+    if (!series || typeof series !== "object" || Array.isArray(series)) throw new TypeError("JSON must contain a series object keyed by ticker.");
+    const symbols = Object.keys(series);
+    if (symbols.length < 2) throw new TypeError("Provide at least two instruments.");
+    const targetWeights = input.targetWeights || Object.fromEntries(symbols.map(symbol => [symbol, 1 / symbols.length]));
+    const result = await runPortfolioBacktest({
+      series,
+      onBar: () => ({ weights: targetWeights }),
+      initialCash: Number(input.initialCash ?? 100000),
+      feeBps: Number(input.feeBps ?? 5),
+      slippageBps: Number(input.slippageBps ?? 5),
+      maxGrossExposure: Number(input.maxGrossExposure ?? 1),
+      maxAbsWeight: Number(input.maxAbsWeight ?? 1),
+      strategyId: input.targetWeights ? "user-defined-static-target-weights" : "equal-weight-static-baseline",
+      strategyVersion: "1.0.0",
+      codeVersion: "marketmind-portfolio-engine"
+    });
+    $("portfolioStatus").textContent = `Completed: ${symbols.length} assets, ${result.dataset.barCountPerAsset} aligned bars. Review costs, exposure and limitations; this is a historical simulation, not a forecast.`;
+    $("portfolioReport").textContent = JSON.stringify(result, null, 2);
+  } catch (error) {
+    $("portfolioStatus").textContent = "Portfolio run rejected: " + error.message;
+    $("portfolioReport").textContent = "No result generated. Correct the input and rerun.";
+  }
+}
+$("runPortfolioBacktest")?.addEventListener("click", runMultiAssetPortfolio);
+$("loadPortfolioDemo")?.addEventListener("click", () => {
+  const make = (symbol, start, moves) => ({ [symbol]: moves.map((close, i) => {
+    const open = i === 0 ? start : moves[i - 1];
+    return { timestamp: `2026-01-0${i + 1}T00:00:00Z`, open, high: Math.max(open, close) + 1, low: Math.min(open, close) - 1, close, volume: 1000 + i * 100 };
+  }) });
+  const series = { ...make("DEMO-A", 100, [101, 103, 102, 105]), ...make("DEMO-B", 50, [50.5, 51, 52, 51.5]) };
+  $("portfolioSeriesJson").value = JSON.stringify({ series, initialCash: 10000, feeBps: 5, slippageBps: 5 }, null, 2);
+  $("portfolioStatus").textContent = "Synthetic demonstration only. Replace all DEMO symbols and prices with verified historical data before interpreting results.";
+});
+
 async function runWorkbench() {
   const bars = window.marketmindGetCandles?.() || [];
   if (bars.length < 2) {
