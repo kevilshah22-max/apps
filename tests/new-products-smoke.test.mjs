@@ -5,7 +5,7 @@ import vm from "node:vm";
 
 const pages = [
   { path: new URL("../site/riskdesk/index.html", import.meta.url), title: "RiskDesk", markers: ["Position sizing", "Local trade journal", "Export CSV"] },
-  { path: new URL("../site/cartoonforge/index.html", import.meta.url), title: "CartoonForge", markers: ["Build storyboard", "Export project JSON", "production brief", "Local AI video rendering", "CartoonForge Render Agent setup guide"] },
+  { path: new URL("../site/cartoonforge/index.html", import.meta.url), title: "CartoonForge", markers: ["Build storyboard", "Export project JSON", "production brief", "Local AI video rendering", "CartoonForge Render Agent setup guide", "--require-video"] },
   { path: new URL("../site/marketmind/index.html", import.meta.url), title: "MarketMind", markers: ["OHLCV CSV", "Analyse candles", "Specialist branches"] }
 ];
 
