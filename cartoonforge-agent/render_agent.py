@@ -118,6 +118,31 @@ def run(command: list[str], stdin_text: str | None = None) -> None:
     subprocess.run(command, input=None if stdin_text is None else stdin_text.encode(),
                    check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
+
+def build_scene_timeline(scenes: list[dict[str, Any]], default_duration: float) -> list[dict[str, Any]]:
+    """Validate scene durations and create a deterministic per-scene narration timeline."""
+    if not isinstance(default_duration, (int, float)) or not 0 < default_duration <= 300:
+        raise ValueError("Default scene duration must be greater than 0 and no more than 300 seconds")
+    timeline, cursor = [], 0.0
+    for index, scene in enumerate(scenes, 1):
+        if not isinstance(scene, dict):
+            raise ValueError(f"Scene {index} must be an object")
+        raw_duration = scene.get("duration", default_duration)
+        if isinstance(raw_duration, bool) or not isinstance(raw_duration, (int, float)) or not 0 < raw_duration <= 300:
+            raise ValueError(f"Scene {index} duration must be greater than 0 and no more than 300 seconds")
+        dialogue = scene.get("dialogue", "")
+        narration = scene.get("narration", "")
+        beat = scene.get("beat", "")
+        text = narration or dialogue or beat or ""
+        if not isinstance(text, str):
+            raise ValueError(f"Scene {index} dialogue/narration/beat must be text")
+        if len(text) > 10_000:
+            raise ValueError(f"Scene {index} narration exceeds 10000 characters")
+        duration = float(raw_duration)
+        timeline.append({"scene": index, "start_seconds": cursor, "end_seconds": cursor + duration,
+                         "duration_seconds": duration, "text": text})
+        cursor += duration
+    return timeline
 def render_clip(image: Path, clip: Path, duration: float, ffmpeg: str) -> None:
     frames = round(duration * 24)
     video_filter = ("scale=2200:1238:force_original_aspect_ratio=increase,crop=2200:1238,"
@@ -126,12 +151,12 @@ def render_clip(image: Path, clip: Path, duration: float, ffmpeg: str) -> None:
          "-frames:v", str(frames), "-vf", video_filter, "-r", "24",
          "-c:v", "libx264", "-preset", "medium", "-crf", "18", str(clip)])
 
-def normalise_video_clip(source: Path, clip: Path, ffmpeg: str) -> None:
+def normalise_video_clip(source: Path, clip: Path, ffmpeg: str, duration: float) -> None:
     """Normalise a ComfyUI-generated video/GIF for reliable concatenation."""
     video_filter = ("scale=2200:1238:force_original_aspect_ratio=increase,crop=2200:1238,"
         "fps=24,scale=1920:1080,format=yuv420p")
     run([ffmpeg, "-y", "-i", str(source), "-an", "-vf", video_filter,
-         "-r", "24", "-c:v", "libx264", "-preset", "medium", "-crf", "18",
+         "-r", "24", "-t", str(duration), "-c:v", "libx264", "-preset", "medium", "-crf", "18",
          "-movflags", "+faststart", str(clip)])
 
 
