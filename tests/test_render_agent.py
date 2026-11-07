@@ -39,6 +39,24 @@ class CartoonForgeAgentTests(unittest.TestCase):
         self.assertEqual(template["4"]["inputs"]["text"], "old positive")
         self.assertEqual(template["6"]["inputs"]["noise_seed"], 123)
 
+    def test_video_output_is_preferred_over_image_keyframe(self):
+        history = {"outputs": {
+            "1": {"images": [{"filename": "keyframe.png"}]},
+            "2": {"gifs": [{"filename": "generated-shot.mp4", "type": "output"}]}
+        }}
+        kind, asset = AGENT.select_output_asset(history)
+        self.assertEqual(kind, "video")
+        self.assertEqual(asset["filename"], "generated-shot.mp4")
+
+    def test_image_output_is_used_when_no_video_exists(self):
+        history = {"outputs": {"1": {"images": [{"filename": "frame.png"}]}}}
+        kind, asset = AGENT.select_output_asset(history)
+        self.assertEqual(kind, "image")
+        self.assertEqual(asset["filename"], "frame.png")
+
+    def test_empty_output_is_rejected(self):
+        self.assertIsNone(AGENT.select_output_asset({"outputs": {}}))
+
     def test_workflow_injection_rejects_unknown_node(self):
         with self.assertRaisesRegex(ValueError, "missing or malformed"):
             AGENT.apply_workflow_inputs({}, "prompt", 1, "99")

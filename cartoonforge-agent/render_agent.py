@@ -68,17 +68,32 @@ def render_comfyui(base_url: str, workflow: dict[str, Any], timeout_seconds: int
         time.sleep(2)
     raise TimeoutError(f"ComfyUI render timed out for prompt {prompt_id}")
 
-def download_image(base_url: str, history: dict[str, Any], destination: Path) -> None:
+def select_output_asset(history: dict[str, Any]) -> tuple[str, dict[str, Any]] | None:
+    """Prefer a true video output; fall back to an image keyframe."""
     for output in history.get("outputs", {}).values():
-        images = output.get("images", []) if isinstance(output, dict) else []
-        if images:
-            image = images[0]
-            query = urllib.parse.urlencode({"filename": image["filename"],
-                "subfolder": image.get("subfolder", ""), "type": image.get("type", "output")})
-            with urllib.request.urlopen(base_url.rstrip("/") + "/view?" + query, timeout=60) as response:
-                destination.write_bytes(response.read())
-            return
-    raise RuntimeError("ComfyUI completed but returned no image output; check workflow output nodes")
+        if not isinstance(output, dict):
+            continue
+        for key in ("videos", "gifs"):
+            assets = output.get(key, [])
+            if assets:
+                return "video", assets[0]
+    for output in history.get("outputs", {}).values():
+        if isinstance(output, dict) and output.get("images"):
+            return "image", output["images"][0]
+    return None
+
+def download_asset(base_url: str, history: dict[str, Any], destination: Path) -> tuple[str, Path]:
+    selected = select_output_asset(history)
+    if not selected:
+        raise RuntimeError("ComfyUI completed but returned no image or video output; check workflow output nodes")
+    asset_type, asset = selected
+    suffix = Path(asset.get("filename", "")).suffix or (".mp4" if asset_type == "video" else ".png")
+    destination = destination.with_suffix(suffix)
+    query = urllib.parse.urlencode({"filename": asset["filename"],
+        "subfolder": asset.get("subfolder", ""), "type": asset.get("type", "output")})
+    with urllib.request.urlopen(base_url.rstrip("/") + "/view?" + query, timeout=120) as response:
+        destination.write_bytes(response.read())
+    return asset_type, destination
 
 def run(command: list[str], stdin_text: str | None = None) -> None:
     subprocess.run(command, input=None if stdin_text is None else stdin_text.encode(),
@@ -92,6 +107,14 @@ def render_clip(image: Path, clip: Path, duration: float, ffmpeg: str) -> None:
          "-frames:v", str(frames), "-vf", video_filter, "-r", "24",
          "-c:v", "libx264", "-preset", "medium", "-crf", "18", str(clip)])
 
+def normalise_video_clip(source: Path, clip: Path, ffmpeg: str) -> None:
+    """Normalise a ComfyUI-generated video/GIF for reliable concatenation."""
+    video_filter = ("scale=2200:1238:force_original_aspect_ratio=increase,crop=2200:1238,"
+        "fps=24,scale=1920:1080,format=yuv420p")
+    run([ffmpeg, "-y", "-i", str(source), "-an", "-vf", video_filter,
+         "-r", "24", "-c:v", "libx264", "-preset", "medium", "-crf", "18",
+         "-movflags", "+faststart", str(clip)])
+
 def render_project(args: argparse.Namespace) -> Path:
     project_path, workflow_path = Path(args.project).resolve(), Path(args.workflow).resolve()
     output_dir = Path(args.output).resolve()
@@ -104,19 +127,23 @@ def render_project(args: argparse.Namespace) -> Path:
     manifest = {"renderer": "CartoonForge local render agent", "comfyui": args.comfyui,
         "frame_size": "1920x1080", "fps": 24, "scene_count": len(scenes), "assets": [],
         "limitations": ["Quality and character consistency depend on the selected local model/workflow.",
-        "Generated keyframes receive camera motion; this is not full character-motion animation.",
+        "A video-capable ComfyUI workflow can produce full-motion scene clips; image workflows fall back to keyframes with camera motion.",
         "No hosted AI service is used. ComfyUI, model weights and FFmpeg must be installed locally."]}
     for index, scene in enumerate(scenes, 1):
         prompt = build_scene_prompt(project, {**scene, "number": index})
         workflow = apply_workflow_inputs(template, prompt, args.seed + index - 1,
             args.positive_node, args.negative_node, args.seed_node)
         history = render_comfyui(args.comfyui, workflow, args.timeout)
-        image = output_dir / f"scene-{index:03d}.png"
-        download_image(args.comfyui, history, image)
+        asset_type, source_asset = download_asset(args.comfyui, history, output_dir / f"scene-{index:03d}-source")
         clip = output_dir / f"scene-{index:03d}.mp4"
-        render_clip(image, clip, args.duration, args.ffmpeg)
+        if asset_type == "video":
+            normalise_video_clip(source_asset, clip, args.ffmpeg)
+        elif args.require_video:
+            raise RuntimeError(f"Scene {index} returned an image, but --require-video was set. Use a ComfyUI video workflow with a video output node.")
+        else:
+            render_clip(source_asset, clip, args.duration, args.ffmpeg)
         manifest["assets"].append({"scene": index, "title": scene.get("title", f"Scene {index}"),
-            "prompt": prompt, "image": image.name, "clip": clip.name})
+            "prompt": prompt, "source_type": asset_type, "source_asset": source_asset.name, "clip": clip.name})
         print(f"[{index}/{len(scenes)}] Rendered {scene.get('title', f'Scene {index}')}")
     concat = output_dir / "concat.txt"
     concat.write_text("".join(f"file '{(output_dir / f'scene-{i:03d}.mp4').as_posix()}'\n"
@@ -156,6 +183,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--ffmpeg", default="ffmpeg")
     parser.add_argument("--piper", default="piper")
     parser.add_argument("--piper-model", help="Optional local Piper ONNX voice model")
+    parser.add_argument("--require-video", action="store_true", help="Fail if a scene workflow returns an image instead of a video clip")
     args = parser.parse_args(argv)
     if args.duration <= 0 or args.timeout <= 0:
         parser.error("--duration and --timeout must be positive")
