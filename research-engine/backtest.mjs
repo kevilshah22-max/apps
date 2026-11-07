@@ -124,7 +124,7 @@ export function runBacktest({
   const orders = [];
   const trades = [];
 
-  function execute(target, referencePrice, bar, signalIndex, fillIndex) {
+  function execute(target, referencePrice, bar, signalIndex) {
     if (target === position) return;
     const delta = target - position;
     const direction = Math.sign(delta);
@@ -192,7 +192,7 @@ export function runBacktest({
     const bar = bars[index];
 
     if (fillModel === "next-bar-open" && pendingTarget !== null) {
-      execute(pendingTarget, bar.open, bar, index - 1, index);
+      execute(pendingTarget, bar.open, bar, index - 1);
       pendingTarget = null;
     }
 
@@ -210,7 +210,7 @@ export function runBacktest({
     }
 
     if (fillModel === "same-bar-close") {
-      execute(target, bar.close, bar, index, index);
+      execute(target, bar.close, bar, index);
     } else {
       pendingTarget = target;
     }
@@ -249,7 +249,7 @@ export function runBacktest({
       finalEquity,
       netPnl: finalEquity - initialCash,
       totalReturnPct,
-      grossReturnPct: (((finalEquity + totalFees) / initialCash) - 1) * 100,
+      grossReturnPct: (((finalEquity + totalFees + totalSlippageCost) / initialCash) - 1) * 100,
       totalFees,
       totalSlippageCost,
       turnover: tradedNotional / initialCash,
