@@ -9,8 +9,8 @@ const bars = () => [
   { timestamp: "2026-01-04T00:00:00Z", open: 101, high: 102, low: 98, close: 99, volume: 1200 }
 ];
 
-test("next-bar-open fills only after a signal and never fills a final-bar signal", () => {
-  const result = runBacktest({
+test("next-bar-open fills only after a signal and never fills a final-bar signal", async () => {
+  const result = await runBacktest({
     bars: bars(),
     onBar: ({ index }) => ({ targetPosition: index < 2 ? 1 : 0 }),
     initialCash: 1000
@@ -23,8 +23,8 @@ test("next-bar-open fills only after a signal and never fills a final-bar signal
   assert.equal(result.metrics.tradeCount, 1);
 });
 
-test("strategy receives immutable history ending at the current bar only", () => {
-  const result = runBacktest({
+test("strategy receives immutable history ending at the current bar only", async () => {
+  const result = await runBacktest({
     bars: bars(),
     onBar: ({ bar, index, history }) => {
       assert.equal(history.length, index + 1);
@@ -38,30 +38,30 @@ test("strategy receives immutable history ending at the current bar only", () =>
   assert.equal(result.equityCurve.length, 4);
 });
 
-test("mutating future bars cannot change earlier equity observations", () => {
+test("mutating future bars cannot change earlier equity observations", async () => {
   const original = bars();
   const altered = bars();
   altered[3] = { ...altered[3], open: 180, high: 190, low: 170, close: 185, volume: 9999 };
   const strategy = ({ history }) => ({
     targetPosition: history.length >= 2 && history.at(-1).close > history[0].close ? 1 : 0
   });
-  const first = runBacktest({ bars: original, onBar: strategy });
-  const second = runBacktest({ bars: altered, onBar: strategy });
+  const first = await runBacktest({ bars: original, onBar: strategy });
+  const second = await runBacktest({ bars: altered, onBar: strategy });
   assert.deepEqual(first.equityCurve.slice(0, 3), second.equityCurve.slice(0, 3));
 });
 
-test("fees and slippage reduce net equity and are recorded separately", () => {
+test("fees and slippage reduce net equity and are recorded separately", async () => {
   const strategy = ({ index }) => ({ targetPosition: index === 0 ? 1 : 0 });
-  const clean = runBacktest({ bars: bars(), onBar: strategy, initialCash: 1000 });
-  const costly = runBacktest({ bars: bars(), onBar: strategy, initialCash: 1000, feeBps: 10, slippageBps: 20 });
+  const clean = await runBacktest({ bars: bars(), onBar: strategy, initialCash: 1000 });
+  const costly = await runBacktest({ bars: bars(), onBar: strategy, initialCash: 1000, feeBps: 10, slippageBps: 20 });
   assert.ok(costly.metrics.finalEquity < clean.metrics.finalEquity);
   assert.ok(costly.metrics.totalFees > 0);
   assert.ok(costly.metrics.totalSlippageCost > 0);
   assert.ok(costly.metrics.grossReturnPct > costly.metrics.totalReturnPct);
 });
 
-test("same-bar-close execution is explicit and uses the current close", () => {
-  const result = runBacktest({
+test("same-bar-close execution is explicit and uses the current close", async () => {
+  const result = await runBacktest({
     bars: bars(),
     fillModel: "same-bar-close",
     onBar: ({ index }) => ({ targetPosition: index === 0 ? 1 : 0 })
@@ -71,26 +71,26 @@ test("same-bar-close execution is explicit and uses the current close", () => {
   assert.equal(result.assumptions.fillModel, "same-bar-close");
 });
 
-test("rejects unsorted, duplicate, timezone-ambiguous and malformed OHLCV", () => {
+test("rejects unsorted, duplicate, timezone-ambiguous and malformed OHLCV", async () => {
   const valid = bars();
-  assert.throws(() => runBacktest({ bars: [valid[1], valid[0]], onBar: () => ({ targetPosition: 0 }) }), /strictly chronological/);
-  assert.throws(() => runBacktest({ bars: [valid[0], valid[0]], onBar: () => ({ targetPosition: 0 }) }), /strictly chronological/);
+  await assert.rejects(() => runBacktest({ bars: [valid[1], valid[0]], onBar: () => ({ targetPosition: 0 }) }), /strictly chronological/);
+  await assert.rejects(() => runBacktest({ bars: [valid[0], valid[0]], onBar: () => ({ targetPosition: 0 }) }), /strictly chronological/);
   const noZone = bars(); noZone[0].timestamp = "2026-01-01T00:00:00";
-  assert.throws(() => runBacktest({ bars: noZone, onBar: () => ({ targetPosition: 0 }) }), /explicit timezone/);
+  await assert.rejects(() => runBacktest({ bars: noZone, onBar: () => ({ targetPosition: 0 }) }), /explicit timezone/);
   const invalid = bars(); invalid[1].low = 105;
-  assert.throws(() => runBacktest({ bars: invalid, onBar: () => ({ targetPosition: 0 }) }), /inconsistent OHLC/);
+  await assert.rejects(() => runBacktest({ bars: invalid, onBar: () => ({ targetPosition: 0 }) }), /inconsistent OHLC/);
 });
 
-test("rejects invalid strategy output, async strategy and position-limit breach", () => {
-  assert.throws(() => runBacktest({ bars: bars(), onBar: () => ({}) }), /finite number/);
-  assert.throws(() => runBacktest({ bars: bars(), onBar: async () => ({ targetPosition: 1 }) }), /synchronous/);
-  assert.throws(() => runBacktest({ bars: bars(), onBar: () => ({ targetPosition: 2 }) }), /maxPositionUnits/);
+test("rejects invalid strategy output, async strategy and position-limit breach", async () => {
+  await assert.rejects(() => runBacktest({ bars: bars(), onBar: () => ({}) }), /finite number/);
+  await assert.rejects(() => runBacktest({ bars: bars(), onBar: async () => ({ targetPosition: 1 }) }), /synchronous/);
+  await assert.rejects(() => runBacktest({ bars: bars(), onBar: () => ({ targetPosition: 2 }) }), /maxPositionUnits/);
 });
 
-test("is deterministic and reports dataset provenance plus a defined baseline", () => {
+test("is deterministic and reports dataset provenance plus a defined baseline", async () => {
   const input = { bars: bars(), onBar: ({ index }) => ({ targetPosition: index % 2 ? 0 : 1 }), feeBps: 5, slippageBps: 3 };
-  const first = runBacktest(input);
-  const second = runBacktest(input);
+  const first = await runBacktest(input);
+  const second = await runBacktest(input);
   assert.deepEqual(first, second);
   assert.equal(first.dataset.sha256.length, 64);
   assert.equal(first.dataset.barCount, 4);
