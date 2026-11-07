@@ -204,15 +204,21 @@ def render_project(args: argparse.Namespace) -> Path:
     scenes = project.get("scenes")
     if not isinstance(scenes, list) or not scenes:
         raise ValueError("Project JSON must contain a non-empty scenes array")
+    timeline = build_scene_timeline(scenes, args.duration)
     manifest = {"renderer": "CartoonForge local render agent", "comfyui": args.comfyui,
         "frame_size": "1920x1080", "fps": 24, "scene_count": len(scenes), "assets": [],
         "character_bible": project.get("character") or {},
         "reference_image": {"enabled": bool(reference_image_name), "comfyui_filename": reference_image_name,
             "conditioning_node": args.reference_image_node} if reference_image_name else {"enabled": False},
+        "audio_timeline": timeline,
+        "audio": {"engine": "Piper per-scene TTS" if args.piper_model else "disabled",
+            "model": Path(args.piper_model).name if args.piper_model else None, "lip_sync": "not implemented"},
         "limitations": ["Quality and character consistency depend on the selected local model/workflow.",
         "A video-capable ComfyUI workflow can produce full-motion scene clips; image workflows fall back to keyframes with camera motion.",
         "No hosted AI service is used. ComfyUI, model weights and FFmpeg must be installed locally."]}
     for index, scene in enumerate(scenes, 1):
+        scene_timing = timeline[index - 1]
+        scene_duration = scene_timing["duration_seconds"]
         prompt = build_scene_prompt(project, {**scene, "number": index})
         workflow = apply_workflow_inputs(template, prompt, args.seed + index - 1,
             args.positive_node, args.negative_node, args.seed_node,
@@ -221,12 +227,28 @@ def render_project(args: argparse.Namespace) -> Path:
         asset_type, source_asset = download_asset(args.comfyui, history, output_dir / f"scene-{index:03d}-source")
         clip = output_dir / f"scene-{index:03d}.mp4"
         if asset_type == "video":
-            normalise_video_clip(source_asset, clip, args.ffmpeg)
+            normalise_video_clip(source_asset, clip, args.ffmpeg, scene_duration)
         elif args.require_video:
             raise RuntimeError(f"Scene {index} returned an image, but --require-video was set. Use a ComfyUI video workflow with a video output node.")
         else:
-            render_clip(source_asset, clip, args.duration, args.ffmpeg)
+            render_clip(source_asset, clip, scene_duration, args.ffmpeg)
+        audio_asset = None
+        if args.piper_model:
+            audio_asset = output_dir / f"scene-{index:03d}-voice.wav"
+            if scene_timing["text"].strip():
+                run([args.piper, "--model", args.piper_model, "--output_file", str(audio_asset)], scene_timing["text"])
+            else:
+                run([args.ffmpeg, "-y", "-f", "lavfi", "-i", "anullsrc=r=22050:cl=mono",
+                     "-t", str(scene_duration), "-c:a", "pcm_s16le", str(audio_asset)])
+            muxed = output_dir / f"scene-{index:03d}-with-audio.mp4"
+            run([args.ffmpeg, "-y", "-i", str(clip), "-i", str(audio_asset),
+                 "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", "aac",
+                 "-af", "apad", "-t", str(scene_duration), "-movflags", "+faststart", str(muxed)])
+            clip = muxed
         manifest["assets"].append({"scene": index, "title": scene.get("title", f"Scene {index}"),
+            "start_seconds": scene_timing["start_seconds"], "duration_seconds": scene_duration,
+            "narration_text": scene_timing["text"] if args.piper_model else None,
+            "voice_asset": audio_asset.name if audio_asset else None,
             "prompt": prompt, "source_type": asset_type, "source_asset": source_asset.name, "clip": clip.name})
         print(f"[{index}/{len(scenes)}] Rendered {scene.get('title', f'Scene {index}')}")
     concat = output_dir / "concat.txt"
@@ -235,18 +257,11 @@ def render_project(args: argparse.Namespace) -> Path:
     silent = output_dir / "cartoon-silent.mp4"
     run([args.ffmpeg, "-y", "-f", "concat", "-safe", "0", "-i", str(concat), "-c", "copy", str(silent)])
     final = output_dir / "cartoonforge-final.mp4"
+    silent.replace(final)
     if args.piper_model:
-        character = (project.get("character") or {}).get("name", "Narrator")
-        narration = "\n".join(f"{character}. Scene {i}. " +
-            str(s.get("dialogue") or s.get("beat") or s.get("visual") or "")
-            for i, s in enumerate(scenes, 1))
-        voice = output_dir / "voice.wav"
-        run([args.piper, "--model", args.piper_model, "--output_file", str(voice)], narration)
-        run([args.ffmpeg, "-y", "-i", str(silent), "-i", str(voice), "-map", "0:v:0", "-map", "1:a:0",
-             "-c:v", "copy", "-c:a", "aac", "-af", "apad", "-shortest", str(final)])
-        manifest["voice"] = {"engine": "Piper", "model": Path(args.piper_model).name, "file": voice.name}
-    else:
-        silent.replace(final)
+        manifest["voice"] = {"engine": "Piper", "mode": "per-scene narration/dialogue",
+            "model": Path(args.piper_model).name,
+            "timing": "Each scene has its own audio clip; short speech is padded with silence to scene duration. No lip-sync."}
     manifest["output"] = final.name
     (output_dir / "render_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(f"Finished: {final}")
