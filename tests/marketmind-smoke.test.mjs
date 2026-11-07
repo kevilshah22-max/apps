@@ -6,6 +6,7 @@ import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 import { runBacktest } from "../site/marketmind/modules/backtest-engine.mjs";
 import { runPortfolioBacktest } from "../site/marketmind/modules/portfolio-backtest.mjs";
+import { screenStrategyCandidates } from "../research-engine/candidate-lab.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const pagePath = path.join(root, "site/marketmind/index.html");
@@ -14,7 +15,7 @@ test("MarketMind page has its core workflow and parses inline JavaScript", async
   const html = await readFile(pagePath, "utf8");
   assert.match(html, /<!doctype html>/i);
   assert.ok(html.includes('src="./modules/unified-workbench.js"'), "Unified workbench module must be wired into the page");
-  for (const marker of ["MarketMind", "OHLCV CSV", "Analyse candles", "Specialist branches", "No live feed", "Multi-asset portfolio lab", "Run multi-asset backtest"]) {
+  for (const marker of ["MarketMind", "OHLCV CSV", "Analyse candles", "Specialist branches", "No live feed", "Multi-asset portfolio lab", "Run multi-asset backtest", "Strategy candidate research lab", "Screen strategy candidates from loaded data"]) {
     assert.ok(html.includes(marker), "Missing MarketMind marker: " + marker);
   }
   const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/gi)];
@@ -87,4 +88,17 @@ test("multi-asset portfolio engine is wired to the workbench and runs equal-weig
   assert.equal(result.dataset.symbols.length, 2);
   assert.equal(result.orders.length, 2);
   assert.equal(result.assumptions.fillModel, "next-bar-open");
+});
+
+test("candidate lab can be imported by the browser workbench and remains research-only", async () => {
+  const bars = [
+    { timestamp: "2026-01-01T00:00:00Z", open: 100, high: 102, low: 99, close: 101, volume: 1000 },
+    { timestamp: "2026-01-02T00:00:00Z", open: 102, high: 104, low: 101, close: 103, volume: 1100 },
+    { timestamp: "2026-01-03T00:00:00Z", open: 104, high: 105, low: 102, close: 103, volume: 900 },
+    { timestamp: "2026-01-04T00:00:00Z", open: 101, high: 102, low: 98, close: 99, volume: 1200 }
+  ];
+  const result = await screenStrategyCandidates({ bars, maxCandidates: 2 });
+  assert.equal(result.candidateCount, 2);
+  assert.ok(result.ranking.every(item => item.promotionEligible === false));
+  assert.ok(result.warnings.some(item => item.includes("multiple-testing")));
 });
