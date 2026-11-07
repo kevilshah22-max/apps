@@ -42,4 +42,6 @@ test("candidate lab explicitly discloses multiple-testing and no-promotion safeg
   assert.ok(result.warnings.some(item => item.includes("multiple-testing")));
   assert.ok(result.warnings.some(item => item.includes("not a probability")));
   assert.ok(result.warnings.some(item => item.includes("No candidate is promotion-eligible")));
+  assert.ok(result.ranking.every(item => !("probability" in item)));
+  assert.ok(result.ranking.every(item => item.scoreDefinition.includes("not a statistical test")));
 });
