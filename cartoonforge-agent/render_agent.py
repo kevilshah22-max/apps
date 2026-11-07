@@ -10,8 +10,16 @@ def build_scene_prompt(project: dict[str, Any], scene: dict[str, Any]) -> str:
     return (
         "High-quality original 3D animated family-film frame, widescreen 16:9. "
         f"Character bible: {character.get('name', 'main character')}, a {character.get('species', 'cartoon character')}, "
-        f"signature palette {character.get('color', 'consistent colours')}; preserve identical face, proportions, markings "
-        "and costume across every shot. "
+        f"signature palette {character.get('color', 'consistent colours')}; "
+        f"face shape {character.get('face', 'consistent face shape')}; "
+        f"eyes {character.get('eyes', 'consistent eye design')}; "
+        f"hair or fur {character.get('hair_or_fur', 'consistent hair or fur')}; "
+        f"body proportions {character.get('proportions', 'consistent proportions')}; "
+        f"costume {character.get('outfit', 'same signature outfit')}; "
+        f"distinctive markings {character.get('markings', 'same distinctive markings')}; "
+        f"accessories {character.get('accessories', 'same accessories')}. "
+        "Treat this character bible and supplied reference image as identity constraints: preserve the same face, "
+        "silhouette, palette, costume, markings and accessories in every shot. "
         f"Art direction: {project.get('genre', 'cinematic animated adventure')}. "
         f"Story: {project.get('title', project.get('story', ''))}. "
         f"Shot {scene.get('number', '')}: {scene.get('title', 'Untitled scene')}. "
@@ -22,7 +30,9 @@ def build_scene_prompt(project: dict[str, Any], scene: dict[str, Any]) -> str:
 
 def apply_workflow_inputs(template: dict[str, Any], prompt: str, seed: int,
                           positive_node: str, negative_node: str | None = None,
-                          seed_node: str | None = None) -> dict[str, Any]:
+                          seed_node: str | None = None,
+                          reference_image_node: str | None = None,
+                          reference_image_name: str | None = None) -> dict[str, Any]:
     workflow = json.loads(json.dumps(template))
     def inputs_for(node_id: str) -> dict[str, Any]:
         if node_id not in workflow or not isinstance(workflow[node_id].get("inputs"), dict):
@@ -43,6 +53,15 @@ def apply_workflow_inputs(template: dict[str, Any], prompt: str, seed: int,
         if not field:
             raise ValueError(f"Seed node {seed_node!r} needs inputs.noise_seed or inputs.seed")
         seed_inputs[field] = seed
+    if reference_image_node:
+        if not reference_image_name:
+            raise ValueError("A reference image node requires an uploaded reference image")
+        reference_inputs = inputs_for(reference_image_node)
+        if "image" not in reference_inputs:
+            raise ValueError(f"Reference image node {reference_image_node!r} must have inputs.image")
+        reference_inputs["image"] = reference_image_name
+    elif reference_image_name:
+        raise ValueError("Reference image uploaded but --reference-image-node was not provided")
     return workflow
 
 def request_json(url: str, payload: dict[str, Any] | None = None, timeout: int = 30) -> dict[str, Any]:
@@ -115,24 +134,64 @@ def normalise_video_clip(source: Path, clip: Path, ffmpeg: str) -> None:
          "-r", "24", "-c:v", "libx264", "-preset", "medium", "-crf", "18",
          "-movflags", "+faststart", str(clip)])
 
+
+def upload_reference_image(base_url: str, image_path: Path) -> str:
+    """Upload a local reference image to ComfyUI's input directory and return its server filename."""
+    import mimetypes, uuid
+    image_path = image_path.resolve()
+    if not image_path.is_file():
+        raise FileNotFoundError(f"Reference image does not exist: {image_path}")
+    if image_path.suffix.lower() not in {".png", ".jpg", ".jpeg", ".webp"}:
+        raise ValueError("Reference image must be PNG, JPG, JPEG or WEBP")
+    payload = image_path.read_bytes()
+    if not payload or len(payload) > 25 * 1024 * 1024:
+        raise ValueError("Reference image must be non-empty and no larger than 25 MB")
+    boundary = "----CartoonForge" + uuid.uuid4().hex
+    mime = mimetypes.guess_type(image_path.name)[0] or "application/octet-stream"
+    parts = [
+        f"--{boundary}\r\nContent-Disposition: form-data; name=\"image\"; filename=\"{image_path.name}\"\r\nContent-Type: {mime}\r\n\r\n".encode(),
+        payload,
+        f"\r\n--{boundary}\r\nContent-Disposition: form-data; name=\"overwrite\"\r\n\r\ntrue\r\n--{boundary}--\r\n".encode()
+    ]
+    request = urllib.request.Request(
+        base_url.rstrip("/") + "/upload/image", data=b"".join(parts),
+        headers={"Content-Type": f"multipart/form-data; boundary={boundary}"}, method="POST")
+    with urllib.request.urlopen(request, timeout=120) as response:
+        result = json.loads(response.read().decode())
+    name = result.get("name")
+    if not name:
+        raise RuntimeError(f"ComfyUI did not confirm reference image upload: {result}")
+    return name
+
 def render_project(args: argparse.Namespace) -> Path:
     project_path, workflow_path = Path(args.project).resolve(), Path(args.workflow).resolve()
     output_dir = Path(args.output).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     project = json.loads(project_path.read_text(encoding="utf-8"))
     template = json.loads(workflow_path.read_text(encoding="utf-8"))
+    reference_image_name = None
+    if args.reference_image:
+        if not args.reference_image_node:
+            raise ValueError("--reference-image-node is required when --reference-image is supplied")
+        reference_image_name = upload_reference_image(args.comfyui, Path(args.reference_image))
+    elif args.reference_image_node:
+        raise ValueError("--reference-image requires --reference-image-node")
     scenes = project.get("scenes")
     if not isinstance(scenes, list) or not scenes:
         raise ValueError("Project JSON must contain a non-empty scenes array")
     manifest = {"renderer": "CartoonForge local render agent", "comfyui": args.comfyui,
         "frame_size": "1920x1080", "fps": 24, "scene_count": len(scenes), "assets": [],
+        "character_bible": project.get("character") or {},
+        "reference_image": {"enabled": bool(reference_image_name), "comfyui_filename": reference_image_name,
+            "conditioning_node": args.reference_image_node} if reference_image_name else {"enabled": False},
         "limitations": ["Quality and character consistency depend on the selected local model/workflow.",
         "A video-capable ComfyUI workflow can produce full-motion scene clips; image workflows fall back to keyframes with camera motion.",
         "No hosted AI service is used. ComfyUI, model weights and FFmpeg must be installed locally."]}
     for index, scene in enumerate(scenes, 1):
         prompt = build_scene_prompt(project, {**scene, "number": index})
         workflow = apply_workflow_inputs(template, prompt, args.seed + index - 1,
-            args.positive_node, args.negative_node, args.seed_node)
+            args.positive_node, args.negative_node, args.seed_node,
+            args.reference_image_node, reference_image_name)
         history = render_comfyui(args.comfyui, workflow, args.timeout)
         asset_type, source_asset = download_asset(args.comfyui, history, output_dir / f"scene-{index:03d}-source")
         clip = output_dir / f"scene-{index:03d}.mp4"
@@ -175,6 +234,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--positive-node", required=True, help="Positive text-encoder node ID")
     parser.add_argument("--negative-node", help="Optional negative text-encoder node ID")
     parser.add_argument("--seed-node", help="Optional sampler node ID")
+    parser.add_argument("--reference-image", help="Optional local character reference image (PNG/JPG/WEBP)")
+    parser.add_argument("--reference-image-node", help="ComfyUI LoadImage/IP-Adapter image input node ID")
     parser.add_argument("--comfyui", default="http://127.0.0.1:8188")
     parser.add_argument("--output", default="cartoonforge-output")
     parser.add_argument("--seed", type=int, default=24681357)
