@@ -62,10 +62,10 @@ class CartoonForgeAgentTests(unittest.TestCase):
 
     def test_reference_image_node_requires_uploaded_asset_and_image_input(self):
         with self.assertRaisesRegex(ValueError, "requires an uploaded reference image"):
-            AGENT.apply_workflow_inputs({"8": {"inputs": {"image": "x"}}}, "p", 1, "8",
+            AGENT.apply_workflow_inputs({"8": {"inputs": {"text": "p", "image": "x"}}}, "p", 1, "8",
                 reference_image_node="8")
         with self.assertRaisesRegex(ValueError, "inputs.image"):
-            AGENT.apply_workflow_inputs({"8": {"inputs": {"other": "x"}}}, "p", 1, "8",
+            AGENT.apply_workflow_inputs({"8": {"inputs": {"text": "p", "other": "x"}}}, "p", 1, "8",
                 reference_image_node="8", reference_image_name="ref.png")
 
     def test_reference_upload_rejects_unsupported_file_type(self):
