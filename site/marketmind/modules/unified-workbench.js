@@ -1,6 +1,6 @@
 import { validateOHLCV } from "./data-integrity.js";
 import { ema, rsi, macd, atr, bollinger, supportResistance } from "./technical.js";
-import { backtestEmaCross } from "./strategy-lab.js";
+import { runBacktest } from "./backtest-engine.mjs";
 import { buildThesis } from "./thesis-planner.js";
 import { analysePortfolio } from "./portfolio-risk.js";
 import { auditCatalysts } from "./catalyst-radar.js";
@@ -25,7 +25,17 @@ function showError(message) {
   $("unifiedStatus").textContent = message;
   $("unifiedStatus").className = "notice";
 }
-function runWorkbench() {
+function emaLast(history, period) {
+  const values = history.map(bar => bar.close);
+  if (values.length < period) return null;
+  let value = values.slice(0, period).reduce((sum, price) => sum + price, 0) / period;
+  const smoothing = 2 / (period + 1);
+  for (let index = period; index < values.length; index += 1) {
+    value = values[index] * smoothing + value * (1 - smoothing);
+  }
+  return value;
+}
+async function runWorkbench() {
   const bars = window.marketmindGetCandles?.() || [];
   if (bars.length < 2) {
     showError("Load and analyse an OHLCV CSV above before running the specialist workbench.");
@@ -49,10 +59,28 @@ function runWorkbench() {
     approximateSupportResistance: levels, warnings: ["Indicator outputs depend on the supplied timeframe and chosen parameters."]
   }, "Locally computed from supplied OHLCV", observations));
   try {
-    const result = backtestEmaCross(validation.bars, { fast: 10, slow: 30, feeBps: 5, slippageBps: 5 });
-    modules.push(record("strategy-lab", result, "Locally computed from supplied OHLCV; 5 bps fee + 5 bps slippage per side"));
+    const engineBars = validation.bars.map(bar => ({
+      timestamp: bar.time, open: bar.open, high: bar.high, low: bar.low,
+      close: bar.close, volume: bar.volume ?? 0
+    }));
+    const result = await runBacktest({
+      bars: engineBars,
+      onBar: ({ history }) => {
+        const fast = emaLast(history, 10);
+        const slow = emaLast(history, 30);
+        return { targetPosition: fast !== null && slow !== null && fast > slow ? 1 : 0 };
+      },
+      initialCash: 10_000, feeBps: 5, slippageBps: 5,
+      strategyId: "marketmind-ema-regime", strategyVersion: "1.0.0",
+      codeVersion: "marketmind-browser-engine"
+    });
+    modules.push(record("strategy-lab", result,
+      "Reproducible chronological engine; next-bar-open fills; 5 bps fee + 5 bps slippage per side"));
   } catch (e) {
-    modules.push(record("strategy-lab", { status: "INSUFFICIENT DATA", reason: e.message, warnings: ["Backtest skipped; this is not a trade signal."] }, "Local computation"));
+    modules.push(record("strategy-lab", {
+      status: "INSUFFICIENT DATA", reason: e.message,
+      warnings: ["Backtest skipped; timestamps must include an explicit UTC offset. This is not a trade signal."]
+    }, "Local computation"));
   }
   const optional = [
     ["portfolio-risk", "portfolioJson", value => analysePortfolio(value.positions || value, value.options || {})],
