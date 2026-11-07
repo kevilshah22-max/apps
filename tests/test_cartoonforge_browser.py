@@ -22,9 +22,8 @@ class CartoonForgeBrowserTests(unittest.TestCase):
         self.assertNotIn("generativelanguage.googleapis.com", self.html)
 
     def test_scene_validation_and_project_export_are_wired(self):
-        for required in ('scene.title', 'scene.visual', 'scene.beat', 'scene.dialogue',
-                         'scene.narration', 'scene.shot', 'scene.duration'):
-            self.assertIn(required, self.html)
+        for required in ('title', 'visual', 'beat', 'dialogue', 'narration', 'shot', 'duration'):
+            self.assertIn('"'+required+'"', self.html)
         self.assertIn('generation:window.cartoonForgeGeneration||null', self.html)
         self.assertIn('sourceScript:$("fullScript")?.value||""', self.html)
         self.assertIn('s.beat||s.visual||"A new scene begins…"', self.html)
