@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { evaluateWalkForward } from "../research-engine/walk-forward.mjs";
+import { evaluateWalkForward } from "../site/marketmind/modules/walk-forward.mjs";
 
 const bars = () => {
   const result = [];
