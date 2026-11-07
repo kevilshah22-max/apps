@@ -1,0 +1,31 @@
+name: Bright Future strategy candidate lab tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "research-engine/candidate-lab.mjs"
+      - "research-engine/backtest.mjs"
+      - "site/marketmind/modules/backtest-engine.mjs"
+      - "tests/candidate-lab.test.mjs"
+      - ".github/workflows/candidate-lab.yml"
+  pull_request:
+    paths:
+      - "research-engine/candidate-lab.mjs"
+      - "research-engine/backtest.mjs"
+      - "site/marketmind/modules/backtest-engine.mjs"
+      - "tests/candidate-lab.test.mjs"
+      - ".github/workflows/candidate-lab.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  candidate-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test tests/candidate-lab.test.mjs
