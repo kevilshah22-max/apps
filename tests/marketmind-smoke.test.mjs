@@ -5,6 +5,7 @@ import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 import { runBacktest } from "../site/marketmind/modules/backtest-engine.mjs";
+import { runPortfolioBacktest } from "../site/marketmind/modules/portfolio-backtest.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const pagePath = path.join(root, "site/marketmind/index.html");
@@ -13,7 +14,7 @@ test("MarketMind page has its core workflow and parses inline JavaScript", async
   const html = await readFile(pagePath, "utf8");
   assert.match(html, /<!doctype html>/i);
   assert.ok(html.includes('src="./modules/unified-workbench.js"'), "Unified workbench module must be wired into the page");
-  for (const marker of ["MarketMind", "OHLCV CSV", "Analyse candles", "Specialist branches", "No live feed"]) {
+  for (const marker of ["MarketMind", "OHLCV CSV", "Analyse candles", "Specialist branches", "No live feed", "Multi-asset portfolio lab", "Run multi-asset backtest"]) {
     assert.ok(html.includes(marker), "Missing MarketMind marker: " + marker);
   }
   const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/gi)];
@@ -65,4 +66,25 @@ test("browser backtest strategy history cannot see future bars", async () => {
   const first = await runBacktest({ bars: firstBars, onBar: strategy });
   const second = await runBacktest({ bars: changedFuture, onBar: strategy });
   assert.deepEqual(first.equityCurve.slice(0, 3), second.equityCurve.slice(0, 3));
+});
+
+test("multi-asset portfolio engine is wired to the workbench and runs equal-weight baseline", async () => {
+  const series = {
+    AAA: [
+      { timestamp: "2026-01-01T00:00:00Z", open: 100, high: 102, low: 99, close: 101, volume: 1000 },
+      { timestamp: "2026-01-02T00:00:00Z", open: 102, high: 104, low: 101, close: 103, volume: 1100 }
+    ],
+    BBB: [
+      { timestamp: "2026-01-01T00:00:00Z", open: 50, high: 51, low: 49, close: 50, volume: 2000 },
+      { timestamp: "2026-01-02T00:00:00Z", open: 51, high: 53, low: 50, close: 52, volume: 2100 }
+    ]
+  };
+  const result = await runPortfolioBacktest({
+    series, onBar: () => ({ weights: { AAA: 0.5, BBB: 0.5 } }),
+    initialCash: 10000, feeBps: 5, slippageBps: 5
+  });
+  assert.equal(result.status, "COMPLETED");
+  assert.equal(result.dataset.symbols.length, 2);
+  assert.equal(result.orders.length, 2);
+  assert.equal(result.assumptions.fillModel, "next-bar-open");
 });
