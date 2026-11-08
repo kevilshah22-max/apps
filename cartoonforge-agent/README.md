@@ -34,6 +34,21 @@ A GPU and suitable model are strongly recommended for practical render times. Th
 5. Identify the node ID for the positive CLIP text encoder. Optionally identify the negative text encoder and sampler node. For reference conditioning, add a LoadImage or compatible IP-Adapter/reference-image node to the workflow and identify its `inputs.image` node ID.
 6. Save the API workflow JSON locally, for example as `workflow-api.json`.
 
+## Generate a storyboard directly in the browser
+
+The hosted CartoonForge studio now includes a **Local AI Script Studio**. It calls the Ollama server on your own computer from the browser, validates the returned scene JSON, and loads the scenes into the existing editor. The full script is not sent to a hosted inference API by this feature.
+
+1. Install and start Ollama, then pull a model that supports structured JSON output and fits your computer's memory. Confirm it appears in `ollama list`.
+2. Allow only the GitHub Pages site origin in Ollama's CORS allow-list. The studio origin is `https://kevilshah22-max.github.io`; set `OLLAMA_ORIGINS` to that exact origin (not a wildcard), then restart Ollama.
+   - **Windows:** open *Edit environment variables for your account*, create/update user variable `OLLAMA_ORIGINS` with value `https://kevilshah22-max.github.io`, save, quit Ollama from the system tray and start it again.
+   - **macOS:** run `launchctl setenv OLLAMA_ORIGINS "https://kevilshah22-max.github.io"`, then restart the Ollama app.
+   - **Linux systemd:** run `sudo systemctl edit ollama.service`, add `Environment="OLLAMA_ORIGINS=https://kevilshah22-max.github.io"` under `[Service]`, then run `sudo systemctl daemon-reload && sudo systemctl restart ollama`.
+3. Keep Ollama bound to its default loopback address. Do not expose port 11434 to the public network or use a wildcard CORS origin.
+4. Open the [CartoonForge studio](https://kevilshah22-max.github.io/apps/cartoonforge/), paste a script, enter the exact installed model name and click **Generate with local AI**. The default endpoint is `http://127.0.0.1:11434`.
+5. Inspect the scenes, character identity, dialogue and durations. Edit any incorrect scene, then export the project JSON and use the render agent below.
+
+If the browser reports a network/CORS error, verify Ollama is running, that the origin value is saved, and that Ollama was fully restarted. The studio does not download models or silently fall back to a hosted provider.
+
 ## Local AI script-to-storyboard agent
 
 The companion `script_agent.py` converts a text script into the same project JSON format consumed by the render agent. It uses a model already installed in **local Ollama**; the script is sent to your configured local Ollama server, not a hosted paid API.
