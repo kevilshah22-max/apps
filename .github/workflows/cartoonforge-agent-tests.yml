@@ -28,9 +28,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: python -m unittest discover -s tests -p 'test_render_agent.py' -v
+      - run: python -m unittest discover -s tests -p 'test_render_agent.py' -v\n      - run: python -m unittest discover -s tests -p 'test_cartoonforge_studio.py' -v
       - run: python -m unittest discover -s tests -p 'test_script_agent.py' -v
       - run: python -m unittest discover -s tests -p 'test_cartoonforge_browser.py' -v
       - name: Check embedded browser JavaScript syntax
         run: node -e 'const fs=require("fs"); const html=fs.readFileSync("site/cartoonforge/index.html","utf8"); const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)]; if(!scripts.length) throw new Error("No inline script found"); new Function(scripts[scripts.length-1][1]);'
-      - run: python -m py_compile cartoonforge-agent/render_agent.py cartoonforge-agent/script_agent.py
+      - run: python -m py_compile cartoonforge-agent/render_agent.py cartoonforge-agent/script_agent.py cartoonforge-agent/studio_server.py
