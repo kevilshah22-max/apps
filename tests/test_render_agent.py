@@ -21,6 +21,21 @@ class CartoonForgeAgentTests(unittest.TestCase):
                           "accessories": "brass star pendant"},
         }
 
+    def test_concat_file_list_uses_audio_muxed_clip_from_manifest(self):
+        output_dir = pathlib.Path("/tmp/cartoonforge-test-output")
+        assets = [
+            {"scene": 1, "clip": "scene-001-with-audio.mp4"},
+            {"scene": 2, "clip": "scene-002.mp4"},
+        ]
+        result = AGENT.build_concat_file_list(assets, output_dir)
+        self.assertIn("scene-001-with-audio.mp4", result)
+        self.assertIn("scene-002.mp4", result)
+        self.assertNotIn("scene-001.mp4'", result)
+
+    def test_concat_file_list_rejects_paths_outside_output_directory(self):
+        with self.assertRaisesRegex(ValueError, "inside the output directory"):
+            AGENT.build_concat_file_list([{"clip": "../outside.mp4"}], pathlib.Path("/tmp/cartoonforge-test-output"))
+
     def test_scene_prompt_preserves_character_bible(self):
         first = AGENT.build_scene_prompt(self.project, {"number": 1, "title": "Arrival", "visual": "A moonlit garden"})
         second = AGENT.build_scene_prompt(self.project, {"number": 2, "title": "Discovery", "visual": "A glowing flower"})
