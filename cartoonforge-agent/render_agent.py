@@ -188,6 +188,21 @@ def upload_reference_image(base_url: str, image_path: Path) -> str:
         raise RuntimeError(f"ComfyUI did not confirm reference image upload: {result}")
     return name
 
+def build_concat_file_list(assets: list[dict[str, Any]], output_dir: Path) -> str:
+    """Build FFmpeg's concat list from actual rendered clips, including muxed audio."""
+    root = output_dir.resolve()
+    entries = []
+    for index, asset in enumerate(assets, 1):
+        clip_name = asset.get("clip")
+        if not isinstance(clip_name, str) or not clip_name:
+            raise ValueError(f"Rendered asset {index} is missing its clip filename")
+        clip_path = (root / clip_name).resolve()
+        if clip_path.parent != root:
+            raise ValueError(f"Rendered asset {index} clip must be inside the output directory")
+        entries.append(f"file '{clip_path.as_posix()}'\\n")
+    return "".join(entries)
+
+
 def render_project(args: argparse.Namespace) -> Path:
     project_path, workflow_path = Path(args.project).resolve(), Path(args.workflow).resolve()
     output_dir = Path(args.output).resolve()
@@ -252,8 +267,7 @@ def render_project(args: argparse.Namespace) -> Path:
             "prompt": prompt, "source_type": asset_type, "source_asset": source_asset.name, "clip": clip.name})
         print(f"[{index}/{len(scenes)}] Rendered {scene.get('title', f'Scene {index}')}")
     concat = output_dir / "concat.txt"
-    concat.write_text("".join(f"file '{(output_dir / f'scene-{i:03d}.mp4').as_posix()}'\n"
-        for i in range(1, len(scenes) + 1)), encoding="utf-8")
+    concat.write_text(build_concat_file_list(manifest["assets"], output_dir), encoding="utf-8")
     silent = output_dir / "cartoon-silent.mp4"
     run([args.ffmpeg, "-y", "-f", "concat", "-safe", "0", "-i", str(concat), "-c", "copy", str(silent)])
     final = output_dir / "cartoonforge-final.mp4"
