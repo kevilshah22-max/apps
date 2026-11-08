@@ -199,7 +199,7 @@ def build_concat_file_list(assets: list[dict[str, Any]], output_dir: Path) -> st
         clip_path = (root / clip_name).resolve()
         if clip_path.parent != root:
             raise ValueError(f"Rendered asset {index} clip must be inside the output directory")
-        entries.append(f"file '{clip_path.as_posix()}'\\n")
+        entries.append(f"file '{clip_path.as_posix()}'\n")
     return "".join(entries)
 
 
