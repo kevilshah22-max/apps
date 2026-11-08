@@ -203,7 +203,7 @@ def build_concat_file_list(assets: list[dict[str, Any]], output_dir: Path) -> st
     return "".join(entries)
 
 
-def render_project(args: argparse.Namespace) -> Path:
+def render_project(args: argparse.Namespace, progress_callback: Any | None = None) -> Path:
     project_path, workflow_path = Path(args.project).resolve(), Path(args.workflow).resolve()
     output_dir = Path(args.output).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -266,6 +266,8 @@ def render_project(args: argparse.Namespace) -> Path:
             "voice_asset": audio_asset.name if audio_asset else None,
             "prompt": prompt, "source_type": asset_type, "source_asset": source_asset.name, "clip": clip.name})
         print(f"[{index}/{len(scenes)}] Rendered {scene.get('title', f'Scene {index}')}")
+        if progress_callback is not None:
+            progress_callback(index, len(scenes), scene.get("title", f"Scene {index}"))
     concat = output_dir / "concat.txt"
     concat.write_text(build_concat_file_list(manifest["assets"], output_dir), encoding="utf-8")
     silent = output_dir / "cartoon-silent.mp4"
