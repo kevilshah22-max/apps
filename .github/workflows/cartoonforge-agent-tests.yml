@@ -5,7 +5,8 @@ on:
       - "cartoonforge-agent/**"
       - "tests/test_script_agent.py"
       - "tests/test_cartoonforge_browser.py"
-      - "site/cartoonforge/index.html"
+      - "tests/test_cartoonforge_studio.py"
+      - "site/cartoonforge/**"
       - "tests/cartoonforge_agent_test_loader.py"
       - "tests/test_render_agent.py"
       - ".github/workflows/cartoonforge-agent-tests.yml"
@@ -14,6 +15,8 @@ on:
     paths:
       - "cartoonforge-agent/**"
       - "tests/test_render_agent.py"
+      - "tests/test_cartoonforge_studio.py"
+      - "site/cartoonforge/**"
       - ".github/workflows/cartoonforge-agent-tests.yml"
 permissions:
   contents: read
@@ -29,8 +32,10 @@ jobs:
         with:
           node-version: "22"
       - run: python -m unittest discover -s tests -p 'test_render_agent.py' -v
+      - run: python -m unittest discover -s tests -p 'test_cartoonforge_studio.py' -v
       - run: python -m unittest discover -s tests -p 'test_script_agent.py' -v
       - run: python -m unittest discover -s tests -p 'test_cartoonforge_browser.py' -v
       - name: Check embedded browser JavaScript syntax
-        run: node -e 'const fs=require("fs"); const html=fs.readFileSync("site/cartoonforge/index.html","utf8"); const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)]; if(!scripts.length) throw new Error("No inline script found"); new Function(scripts[scripts.length-1][1]);'
-      - run: python -m py_compile cartoonforge-agent/render_agent.py cartoonforge-agent/script_agent.py
+        run: |
+          node -e 'const fs=require("fs"); for (const file of ["site/cartoonforge/index.html","site/cartoonforge/studio.html"]) { const html=fs.readFileSync(file,"utf8"); const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)]; if(!scripts.length) throw new Error("No inline script found in "+file); new Function(scripts[scripts.length-1][1]); }'
+      - run: python -m py_compile cartoonforge-agent/render_agent.py cartoonforge-agent/script_agent.py cartoonforge-agent/studio_server.py
