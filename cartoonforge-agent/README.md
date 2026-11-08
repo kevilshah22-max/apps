@@ -2,6 +2,34 @@
 
 CartoonForge's browser MVP exports a storyboard JSON file. This companion agent turns that export into scene assets and an MP4 using a **local ComfyUI instance** and FFmpeg. It supports true video clips from compatible ComfyUI video workflows (preferred) and image-keyframe fallback. Optional narration uses a local Piper voice model.
 
+## One-click local video studio (Windows and macOS/Linux)
+
+The new local studio joins the complete pipeline behind one **Generate full video** button. After the one-time local setup, paste a script, define the character and click once. The studio then:
+1. Generates a scene-by-scene storyboard with your local Ollama model.
+2. Submits each scene to your saved ComfyUI API workflow.
+3. Produces full-motion clips when the workflow is video-capable (or rejects still-image fallback when configured to require video).
+4. Adds optional local Piper narration.
+5. Assembles the final MP4 with FFmpeg and provides a download link.
+
+### Start the studio
+
+- **Windows:** double-click `Start-CartoonForge.bat`.
+- **macOS/Linux:** run `./start-cartoonforge.sh` from this folder (Python 3.10+ required).
+
+Open `http://127.0.0.1:8765` if it does not open automatically. The server binds to loopback only and stores its configuration and outputs in `~/.cartoonforge/` (on Windows, your user home folder).
+
+### One-time setup
+
+1. Install and start Ollama; pull a model that fits your hardware (for example, a small instruct model). Enter its exact installed name in the studio.
+2. Install and start ComfyUI with a compatible video-diffusion workflow and all required custom nodes/model weights. A standard image workflow is not a full-motion video generator.
+3. Install FFmpeg and ensure `ffmpeg` is available on PATH.
+4. In ComfyUI, save the workflow in **API format**. Upload that JSON once in the local studio and enter the positive text prompt node ID. Add optional negative-prompt and sampler node IDs if the workflow uses them.
+5. Save setup. The studio remembers the workflow and settings on this computer.
+
+After setup, the per-video workflow is one click. Model downloads and initial engine installation are not instantaneous and are not bundled; large video models can require substantial GPU memory and disk space. For narration, optionally add a local Piper ONNX voice model path. The default mode requires true video output so it will stop rather than silently create a slideshow if the workflow only returns still images.
+
+**Privacy:** scripts are sent only to the Ollama server on loopback. Scene prompts and render jobs are sent only to the local ComfyUI instance. The studio does not use a hosted generation API. Do not expose either local service to the public internet.
+
 ## What it does
 
 1. Reads the CartoonForge project JSON export.
