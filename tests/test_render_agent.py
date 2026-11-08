@@ -31,6 +31,7 @@ class CartoonForgeAgentTests(unittest.TestCase):
         self.assertIn("scene-001-with-audio.mp4", result)
         self.assertIn("scene-002.mp4", result)
         self.assertNotIn("scene-001.mp4'", result)
+        self.assertEqual(len(result.splitlines()), 2)
 
     def test_concat_file_list_rejects_paths_outside_output_directory(self):
         with self.assertRaisesRegex(ValueError, "inside the output directory"):
