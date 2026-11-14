@@ -71,10 +71,10 @@ def split_script(script: str, max_scenes: int) -> list[str]:
     """Split a script into ordered, readable beats without requiring a local LLM."""
     blocks = [re.sub(r"\s+", " ", p).strip() for p in re.split(r"\n\s*\n+", script) if p.strip()]
     if not blocks:
-        blocks = [re.sub(r"\\s+", " ", script).strip()]
+        blocks = [re.sub(r"\s+", " ", script).strip()]
     sentences = []
     for block in blocks:
-        sentences.extend(x.strip() for x in re.split(r"(?<=[.!?])\s+, block) if x.strip())
+        sentences.extend(x.strip() for x in re.split(r"(?<=[.!?])\s+", block) if x.strip())
     if len(sentences) <= max_scenes:
         return sentences
     size = (len(sentences) + max_scenes - 1) // max_scenes
@@ -182,7 +182,7 @@ def run_cloud_job(job_id: str, payload: dict[str, Any], config: dict[str, Any], 
         clips.append(clip)
         update(stage=f"Scene {i}/{len(beats)} ready", progress=int(i*85/len(beats)))
     concat = job_dir / "concat.txt"
-    concat.write_text("".join("file '"+p.as_posix()+"'\\n" for p in clips), encoding="utf-8")
+    concat.write_text("".join("file '"+p.as_posix()+"'\n" for p in clips), encoding="utf-8")
     final = job_dir / "cartoonforge-final.mp4"
     update(stage="Assembling final MP4", progress=92)
     subprocess.run([config.get("ffmpeg","ffmpeg"), "-y", "-f", "concat", "-safe", "0", "-i", str(concat),
