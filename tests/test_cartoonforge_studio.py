@@ -31,7 +31,7 @@ class CartoonForgeCloudStudioTests(unittest.TestCase):
         self.assertNotIn("comfyui", status)
 
     def test_script_is_split_into_ordered_beats(self):
-        beats = STUDIO.split_script("Pip wakes up. He sees a star.\\n\\nHe follows it into the forest.", 3)
+        beats = STUDIO.split_script("Pip wakes up. He sees a star.\n\nHe follows it into the forest.", 3)
         self.assertEqual(beats, ["Pip wakes up.", "He sees a star.", "He follows it into the forest."])
 
     def test_script_can_be_grouped_to_scene_limit(self):
