@@ -69,12 +69,12 @@ def dependency_status(config: dict[str, Any]) -> dict[str, Any]:
 
 def split_script(script: str, max_scenes: int) -> list[str]:
     """Split a script into ordered, readable beats without requiring a local LLM."""
-    blocks = [re.sub(r"\\s+", " ", p).strip() for p in re.split(r"\\n\\s*\\n+", script) if p.strip()]
+    blocks = [re.sub(r"\s+", " ", p).strip() for p in re.split(r"\n\s*\n+", script) if p.strip()]
     if not blocks:
         blocks = [re.sub(r"\\s+", " ", script).strip()]
     sentences = []
     for block in blocks:
-        sentences.extend(x.strip() for x in re.split(r"(?<=[.!?])\\s+", block) if x.strip())
+        sentences.extend(x.strip() for x in re.split(r"(?<=[.!?])\s+, block) if x.strip())
     if len(sentences) <= max_scenes:
         return sentences
     size = (len(sentences) + max_scenes - 1) // max_scenes
@@ -107,10 +107,10 @@ def cloud_video(prompt: str, destination: Path, config: dict[str, Any], seed: in
             raise RuntimeError("The free shared video queue is busy or rate-limited. Please retry later.") from exc
         raise RuntimeError(f"Cloud video request failed (HTTP {exc.code}).") from exc
     result = None
-    blocks = raw.split("\\n\\n")
+    blocks = raw.split("\n\n")
     for block in reversed(blocks):
-        event = re.search(r"^event:\\s*(\\S+)", block, re.M)
-        match = re.search(r"^data:\\s*(.+)$", block, re.M)
+        event = re.search(r"^event:\s*(\S+)", block, re.M)
+        match = re.search(r"^data:\s*(.+)$", block, re.M)
         if not event or not match:
             continue
         if event.group(1) == "error":
