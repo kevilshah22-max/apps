@@ -1,0 +1,119 @@
+name: CartoonForge — generate MP4
+
+on:
+  workflow_dispatch:
+    inputs:
+      script:
+        description: "Paste your complete cartoon script (20–50,000 characters)"
+        required: true
+        type: string
+      title:
+        description: "Film title"
+        required: false
+        default: "My Cartoon"
+        type: string
+      genre:
+        description: "Cartoon visual style"
+        required: true
+        default: "2D hand-drawn cartoon"
+        type: choice
+        options:
+          - "2D hand-drawn cartoon"
+          - "Whimsical 3D animated adventure"
+          - "Anime-inspired fantasy"
+          - "Stop-motion storybook"
+          - "Educational animation"
+          - "Comedy cartoon"
+      scenes:
+        description: "Number of generated scenes (1–6)"
+        required: true
+        default: "3"
+        type: choice
+        options: ["1", "2", "3", "4", "5", "6"]
+      character_name:
+        description: "Main character name"
+        required: false
+        default: "Pip"
+        type: string
+      character_species:
+        description: "Character species or type"
+        required: false
+        default: "fox"
+        type: string
+      character_color:
+        description: "Main character colour"
+        required: false
+        default: "warm orange"
+        type: string
+      character_face:
+        description: "Face and eyes"
+        required: false
+        default: "expressive face, large green eyes"
+        type: string
+      character_fur:
+        description: "Hair or fur"
+        required: false
+        default: "soft orange fur, white muzzle"
+        type: string
+      character_outfit:
+        description: "Signature outfit"
+        required: false
+        default: "blue scarf"
+        type: string
+      character_marks:
+        description: "Distinctive markings or accessories"
+        required: false
+        default: "white tail tip, tiny star pendant"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cartoonforge-video-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  render:
+    name: Generate cartoon video
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out CartoonForge
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install FFmpeg on GitHub runner
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version
+
+      - name: Generate scenes and assemble MP4
+        env:
+          CARTOON_SCRIPT: ${{ inputs.script }}
+          CARTOON_TITLE: ${{ inputs.title }}
+          CARTOON_GENRE: ${{ inputs.genre }}
+          CARTOON_SCENES: ${{ inputs.scenes }}
+          CHARACTER_NAME: ${{ inputs.character_name }}
+          CHARACTER_SPECIES: ${{ inputs.character_species }}
+          CHARACTER_COLOR: ${{ inputs.character_color }}
+          CHARACTER_FACE: ${{ inputs.character_face }}
+          CHARACTER_FUR: ${{ inputs.character_fur }}
+          CHARACTER_OUTFIT: ${{ inputs.character_outfit }}
+          CHARACTER_MARKS: ${{ inputs.character_marks }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python cartoonforge-agent/github_runner.py
+
+      - name: Upload finished MP4 and scene files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cartoonforge-video-${{ github.run_number }}
+          path: cartoonforge-output/
+          if-no-files-found: warn
+          retention-days: 7
