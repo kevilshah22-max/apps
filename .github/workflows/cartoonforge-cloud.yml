@@ -7,11 +7,6 @@ on:
         description: "Paste your complete cartoon script (20–50,000 characters)"
         required: true
         type: string
-      title:
-        description: "Film title"
-        required: false
-        default: "My Cartoon"
-        type: string
       genre:
         description: "Cartoon visual style"
         required: true
@@ -96,7 +91,7 @@ jobs:
       - name: Generate scenes and assemble MP4
         env:
           CARTOON_SCRIPT: ${{ inputs.script }}
-          CARTOON_TITLE: ${{ inputs.title }}
+          CARTOON_TITLE: "CartoonForge output"
           CARTOON_GENRE: ${{ inputs.genre }}
           CARTOON_SCENES: ${{ inputs.scenes }}
           CHARACTER_NAME: ${{ inputs.character_name }}
