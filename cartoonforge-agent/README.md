@@ -1,3 +1,39 @@
+# CartoonForge — one-click cartoon video studio
+
+CartoonForge now has a **free-first cloud generation mode** for computers without a dedicated GPU. The browser studio uses a public Hugging Face Space running LTX-Video to generate short scene clips in the cloud, then uses FFmpeg on your computer to assemble them into one MP4. No Ollama, ComfyUI, local diffusion model or GPU is required in this mode.
+
+## Free cloud mode (recommended for CPU-only computers)
+
+### What you need
+- Windows, macOS or Linux.
+- Python 3.10+.
+- FFmpeg installed and available as `ffmpeg` on PATH.
+- Internet access.
+- A Hugging Face token is optional; leave it blank to try the public Space.
+
+### Start
+- Windows: double-click `Start-CartoonForge.bat`.
+- macOS/Linux: run `./start-cartoonforge.sh`.
+- Open `http://127.0.0.1:8765` if the browser does not open automatically.
+
+Paste a script, choose a cartoon style, describe the main character, select 1–6 scenes and click **Generate full cartoon video**. The local controller splits the script into sequential beats, sends scene prompts to the hosted LTX-Video Space, downloads each returned clip, and assembles the final MP4 with FFmpeg.
+
+### Free-tier limitations — read before relying on it
+- The LTX-Video Space is a shared public demo, not an SLA-backed API. It can be queued, paused, rate-limited, changed or taken offline by its operator.
+- There is no guaranteed number of free generations, processing time, output length or uptime. A free route is best-effort, not unlimited production capacity.
+- Each scene is a short generated clip. The current prototype does not promise continuous character identity, exact script fidelity, speech, lip-sync, subtitles, music or sound effects.
+- The current scene splitter groups script sentences; it is not an LLM screenplay director. Review the result before publishing.
+- FFmpeg is required locally to combine the downloaded clips. Video generation happens in the cloud; final assembly happens on your computer.
+- If the public Space is unavailable, CartoonForge reports the provider error rather than silently switching to a paid service.
+
+### Optional Hugging Face token
+The public Space may accept unauthenticated requests. If it starts requiring authentication, create a read-only Hugging Face token and enter it in the studio's optional token field. The token is stored in `~/.cartoonforge/config.json` on your computer. Do not share it or commit it to GitHub.
+
+## Legacy local renderer (optional)
+The previous ComfyUI + Ollama renderer remains available in the codebase for users with compatible hardware and workflows. It is not required by the new cloud mode. Its detailed setup is documented below.
+
+---
+
 # CartoonForge Local Render Agent
 
 CartoonForge's browser MVP exports a storyboard JSON file. This companion agent turns that export into scene assets and an MP4 using a **local ComfyUI instance** and FFmpeg. It supports true video clips from compatible ComfyUI video workflows (preferred) and image-keyframe fallback. Optional narration uses a local Piper voice model.
